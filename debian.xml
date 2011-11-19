@@ -1,0 +1,184 @@
+<project name="nuxeo-debian-package"
+         default="package"
+         xmlns:nx="urn:nuxeo-build"
+         xmlns:artifact="urn:nuxeo-artifact">
+    <taskdef resource="org/nuxeo/build/antlib.xml" uri="urn:nuxeo-build" />
+    <taskdef resource="org/nuxeo/build/artifact/antlib.xml"
+           uri="urn:nuxeo-artifact" />
+    <taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+    <property name="out.dir" value="${maven.project.build.directory}" />
+    <property name="resources.dir" value="${out.dir}/resources" />
+    <property name="distribution.dir" value="${out.dir}/distribution" />
+
+
+    <!-- Get variables from environment if set, use defaults otherwise -->
+    <target name="init-from-env">
+        <!-- distribution settings -->
+        <condition property="distribution.groupId" value="${env.distribution.groupId}"
+                   else="org.nuxeo.ecm.distribution">
+            <isset property="env.distribution.groupId" />
+        </condition>
+        <condition property="distribution.artifactId" value="${env.distribution.artifactId}"
+                   else="nuxeo-distribution-tomcat">
+            <isset property="env.distribution.artifactId" />
+        </condition>
+        <condition property="distribution.version" value="${env.distribution.version}"
+                   else="5.5-SNAPSHOT">
+            <isset property="env.distribution.version" />
+        </condition>
+        <condition property="distribution.classifier" value="${env.distribution.classifier}"
+                   else="nuxeo-cap">
+            <isset property="env.distribution.classifier" />
+        </condition>
+        <!-- partial package settings -->
+        <condition property="package.name" value="${env.package.name}"
+                   else="nuxeo">
+            <isset property="env.package.name" />
+        </condition>
+        <condition property="package.revision" value="${env.package.revision}"
+                   else="01">
+            <isset property="env.package.revision" />
+        </condition>
+    </target>
+
+
+    <!-- pick deb version and destination pool from distribution version -->
+    <target name="init" depends="init-from-env">
+        <!-- Build timestamp -->
+        <tstamp>
+            <format property="build.timestamp" pattern="yyyyMMdd" />
+        </tstamp>
+        <!-- Check whether we have a snapshot -->
+        <if>
+            <not>
+                <isset property="package.type" />
+            </not>
+            <then>
+                <propertyregex property="package.snapshot.version"
+                               input="${distribution.version}"
+                               regexp="([0-9\.]+)-SNAPSHOT"
+                               select="\1-00+${build.timestamp}+${package.revision}" />
+                <if>
+                    <isset property="package.snapshot.version" />
+                    <then>
+                        <property name="package.version" value="${package.snapshot.version}" />
+                        <property name="package.type" value="snapshot" />
+                    </then>
+                </if>
+            </then>
+        </if>
+        <!-- Check whether we have a date-based release -->
+        <if>
+            <not>
+                <isset property="package.type" />
+            </not>
+            <then>
+                <propertyregex property="package.datebased.version"
+                               input="${distribution.version}"
+                               regexp="([0-9\.]+)-I([0-9]{8})_(.*)"
+                               select="\1-00+\2+\3+${package.revision}" />
+                <if>
+                    <isset property="package.datebased.version" />
+                    <then>
+                        <property name="package.version" value="${package.datebased.version}" />
+                        <property name="package.type" value="datebased" />
+                    </then>
+                </if>
+            </then>
+        </if>
+        <!-- Check whether we have a release candidate -->
+        <if>
+            <not>
+                <isset property="package.type" />
+            </not>
+            <then>
+                <propertyregex property="package.rc.version"
+                               input="${distribution.version}"
+                               regexp="([0-9\.]+)-(RC[0-9]+)"
+                               select="\1-00+${build.timestamp}+\2+${package.revision}" />
+                <if>
+                    <isset property="package.rc.version" />
+                    <then>
+                        <property name="package.version" value="${package.rc.version}" />
+                        <property name="package.type" value="datebased" />
+                    </then>
+                </if>
+            </then>
+        </if>
+        <!-- None of the above? We have a release! -->
+        <if>
+            <not>
+                <isset property="package.type" />
+            </not>
+            <then>
+                <property name="package.version" value="${distribution.version}" />
+                <property name="package.type" value="release" />
+            </then>
+        </if>
+        <!-- Versions in debian parlance -->
+        <propertyregex property="debian.version"
+                       input="${package.version}"
+                       regexp="([0-9\.]+)-.*"
+                       select="\1" />
+        <propertyregex property="debian.revision"
+                       input="${package.version}"
+                       regexp="([0-9\.]+)-(.*)"
+                       select="\2" />
+        <!-- Print results -->
+        <echo message="*** Version settings ***" />
+        <echo message="Distribution version: ${distribution.version}" />
+        <echo message="Package version: ${package.version}" />
+        <echo message="Package type: ${package.type}" />
+        <echo message="Debian version: ${debian.version}" />
+        <echo message="Debian revision: ${debian.revision}" />
+    </target>
+
+
+    <!-- Prepare files for deb packaging -->
+    <target name="setup" depends="init">
+
+        <echo message="*** Download and extract distribution ***" />
+        <!-- prepare distribution -->
+        <unzip dest="${out.dir}/tmpdist" overwrite="true">
+            <artifact:resolveFile key="${distribution.groupId}:${distribution.artifactId}:${distribution.version}:zip:${distribution.classifier}" />
+        </unzip>
+        <!-- "rename" distribution to known name -->
+        <path id="unzip-dir">
+            <dirset dir="${out.dir}/tmpdist">
+                <include name="*" />
+            </dirset>
+        </path>
+        <property name="unzip-name" refid="unzip-dir" />
+        <move file="${unzip-name}"
+              tofile="${distribution.dir}/${package.name}-${debian.version}" />
+        <delete includeEmptyDirs="true">
+            <fileset dir="${out.dir}/tmpdist" />
+        </delete>
+
+        <!-- Repack as .orig.tar.gz for source package
+             Given an identical source package, the archive must be identical every time -->
+        <echo message="*** Repack as .orig.tar.gz ***" />
+        <!-- Since preservelastmodified doesn't seem to work correctly, set all files to fixed date -->
+        <touch millis="0">
+            <fileset dir="${distribution.dir}">
+                <include name="**" />
+            </fileset>
+        </touch>
+        <!-- Pack and compress -->
+        <tar destfile="${out.dir}/${package.name}-${debian.version}.orig.tar.gz" compression="gzip">
+            <tarfileset dir="${distribution.dir}" username="root" group="root">
+                <include name="**" />
+            </tarfileset>
+        </tar>
+
+    </target>
+
+    <target name="package" depends="setup">
+
+        <fail />
+
+    </target>
+
+
+</project>
