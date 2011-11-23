@@ -1,0 +1,3 @@
+Since multimedia packages are often fast-moving targets, the Debian distributions often have older versions.
+For more up-to-date packages, you can use the debian-multimedia repository, see instructions on their site at http://debian-multimedia.org/
+

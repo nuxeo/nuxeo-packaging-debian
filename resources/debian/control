@@ -1,0 +1,40 @@
+Source: @package.name@
+Section: devel
+Priority: optional
+Build-Depends: debhelper (>=5), po-debconf, rsync
+Standards-Version: 3.9.1
+Maintainer: Nuxeo Packagers <packagers@nuxeo.com>
+Homepage: http://www.nuxeo.com/
+
+
+Package: @package.name@
+Section: web
+Architecture: all
+Depends: debconf, adduser, openjdk-6-jdk|openjdk-7-jdk, libreoffice|openoffice.org, openoffice.org-headless|libreoffice, imagemagick(>=7:6.3.7), poppler-utils, ffmpeg, ffmpeg2theora, ufraw, libwpd-tools, postgresql (>=8.3), perl, locales, pwgen, ${misc:Depends}
+Recommends: apache2
+#Provides: nuxeo-dm, nuxeo-dam, nuxeo-cmf
+#Conflicts: nuxeo-dm, nuxeo-dam, nuxeo-cmf
+#Replaces: nuxeo-dm, nuxeo-dam, nuxeo-cmf
+Description: Nuxeo is a full-featured document management server and platform
+ Nuxeo is a document management server, designed to help organizations
+ better manage their digital content (documents, images, videos, etc.). It
+ provides an approachable and cost effective alternative to mainstream
+ proprietary, resource-intensive offerings for document management.
+ .
+ Its main features include: metadata/taxonomies, versioning, lifecyle
+ management, workflow, relations, searching, reporting, transformation,
+ auditing, retention and content automation.
+ .
+ Nuxeo is already used by many large companies and public sector
+ organizations to manage up to hundreds of millions of documents.
+ .
+ Its graphical interface is web-based, allowing user to work with just a simple
+ web browser. Various APIs, including web services and REST APIs, allow
+ developers and systems integrators to use the Nuxeo platform to build vertical
+ business application for their own customers needs.
+ .
+ Thanks to its plugin system, it can be extended with additional technical and
+ business features.
+ .
+ You can find more information about Nuxeo at http://www.nuxeo.com/
+

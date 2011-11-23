@@ -1,0 +1,231 @@
+
+# common functions used by the maintainer scripts
+
+NUXEO_CONF="@@NUXEO_ETC@@/nuxeo.conf"
+DB_LIST=("default" "postgresql" "oracle" "mssql" "mysql")
+
+CUSTOMDB_LIST=("postgresql" "oracle" "mssql" "mysql")
+CUSTOMDB_NAMES=("PostgreSQL" "Oracle" "MSSQL" "MySQL")
+
+DBAUTOPGSQL="Autoconfigure PostgreSQL"
+DBCUSTOM="User-configured database"
+
+PGCLUSTER="nuxeodb"
+PGDEFAULTVERSION="8.4"
+
+
+create_user() {
+    if ! getent passwd @@NUXEO_USER@@  >/dev/null; then
+        echo -n "Adding user @@NUXEO_USER@@... "
+        adduser --system --home @@NUXEO_HOME@@ \
+                --no-create-home \
+                --group --shell /bin/bash @@NUXEO_USER@@
+        echo "ok."
+    fi
+}
+
+check_ip_port_free() {
+
+    ip=$1
+    port=$2
+    allips=""
+    RET=false
+    if [ "$ip" = "0.0.0.0" ] || [ "$ip" = "::" ]; then
+        allips="(.*)"
+    elif [ "$ip" = "127.0.0.1" ] || [ "$ip" = "::1" ]; then
+        allips="(0.0.0.0|::|127.0.0.1|::1)"
+    else
+        allips="(0.0.0.0|::|$ip)"
+    fi
+    conflicts=$(netstat -nlt | awk '{print $4}' | grep -E "^$allips:$port$") || true
+    if [ -z "$conflicts" ]; then
+        RET=true
+    fi
+
+}
+
+validate_port_syntax() {
+
+    input=$1
+    RET=false
+    check=$(echo $input | tr -cd "[:digit:]")
+    if [ "$check" = "$input" ]; then
+        if [ $check -gt 1023 ] && [ $check -lt 65536 ]; then
+            RET=true
+        fi
+    fi
+    if [ -z "$input" ]; then
+        RET=false
+    fi
+
+}
+
+validate_ip_address() {
+
+    # We just validate the general form
+    ip=$1
+    RET=false
+    v4check=$(echo $ip | grep -E "^([[:digit:]]{1,3}\.){3}[[:digit:]]{1,3}$") || true
+    v6check=$(echo $ip | tr -cd "[:xdigit:]:" | grep ":") || true
+    if [ "$v4check" = "$ip" ] || [ "$v6check" = "$ip" ]; then
+        RET=true
+    fi
+    if [ -z "$ip" ]; then
+        RET=false
+    fi
+
+}
+
+get_conf_var() {
+
+    RET=$(grep -E "^$1\s*=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr -d ' ')
+
+}
+
+set_conf_var() {
+
+    # Note: doesn't handle colon in key or value
+    key=$1
+    value=$2
+    has_key=$(grep -E "^#?$key=" $NUXEO_CONF | wc -l)
+    if [ "$has_key" = "0" ]; then
+        echo "$key=$value" >> $NUXEO_CONF
+    else
+        perl -p -i -e "s:^#?$key=.*$:$key=$value:g" $NUXEO_CONF
+    fi
+
+}
+
+get_templates_list() {
+
+    RET=$(grep -E "^#?nuxeo.templates=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr "," " ")
+
+}
+
+get_db_template() {
+
+    get_templates_list
+    templates=$RET
+    RET="default"
+    for t in ${templates[@]}; do
+        for d in ${DB_LIST[@]}; do
+            if [ "$t" = "$d" ]; then
+                RET=$t
+                return
+            fi
+        done
+    done
+}
+
+set_db_template() {
+
+    get_templates_list
+    templates=$RET
+    newtemplates=""
+    for t in ${templates[@]}; do
+        for d in ${DB_LIST[@]}; do
+            if [ "$t" = "$d" ]; then
+                t="$1"
+            fi
+        done
+        if [ ! -z $newtemplates ]; then
+            newtemplates+=","
+        fi
+        newtemplates+="$t"
+    done
+
+    perl -p -i -e "s:^#?nuxeo.templates=.*$:nuxeo.templates=$newtemplates:g" $NUXEO_CONF
+
+}
+
+get_existing_conf() {
+
+    # This sets the defaults from nuxeo.conf
+
+    # If using the PostgreSQL database, check for "autoconf" key
+    # to see whether this is a custom PostgreSQL or an "Auto" one.
+    # This should later be replaced by a check against autoconf values.
+
+    get_conf_var nuxeo.bind.address
+    if [ ! -z "$RET" ]; then
+        db_set nuxeo-@@PRODUCT@@/bind-address $RET
+    fi
+    get_conf_var nuxeo.server.http.port
+    if [ ! -z "$RET" ]; then
+        db_set nuxeo-@@PRODUCT@@/http-port $RET
+    fi
+    get_conf_var nuxeo.server.ajp.port
+    if [ ! -z "$RET" ]; then
+        db_set nuxeo-@@PRODUCT@@/ajp-port $RET
+    fi
+
+    get_conf_var nuxeo.debconf.pgsqldb
+    AUTOPG=$RET
+    get_db_template
+    if [ ! -z "$RET" ]; then
+        DB=$RET
+        if [ "$DB" = "default" ]; then
+            db_set nuxeo-@@PRODUCT@@/database $DBAUTOPGSQL
+        elif [ "$DB" = "postgresql" -a "$AUTOPG" = "auto" ]; then
+            db_set nuxeo-@@PRODUCT@@/database $DBAUTOPGSQL
+            get_conf_var nuxeo.db.host
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbhost $RET
+            fi
+            get_conf_var nuxeo.db.port
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbport $RET
+            fi
+            get_conf_var nuxeo.db.name
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbname $RET
+            fi
+            get_conf_var nuxeo.db.user
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbuser $RET
+            fi
+            get_conf_var nuxeo.db.password
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbpass $RET
+            fi
+        else
+            db_set nuxeo-@@PRODUCT@@/database $DBCUSTOM
+            for ((i=0; i<${#CUSTOMDB_LIST[@]}; i++)); do
+                if [ "${CUSTOMDB_LIST[$i]}" = "$DB" ]; then
+                    db_set nuxeo-@@PRODUCT@@/customdb ${CUSTOMDB_NAMES[$i]}
+                fi
+            done
+            get_conf_var nuxeo.db.host
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbhost $RET
+            fi
+            get_conf_var nuxeo.db.port
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbport $RET
+            fi
+            get_conf_var nuxeo.db.name
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbname $RET
+            fi
+            get_conf_var nuxeo.db.user
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbuser $RET
+            fi
+            get_conf_var nuxeo.db.password
+            if [ ! -z "$RET" ]; then
+                db_set nuxeo-@@PRODUCT@@/dbpass $RET
+            fi
+        fi
+
+
+    fi
+
+}
+
+
+activate_wizard() {
+
+    set_conf_var nuxeo.wizard.done false
+
+}
+

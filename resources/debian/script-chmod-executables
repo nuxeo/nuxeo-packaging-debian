@@ -1,0 +1,15 @@
+#!/bin/bash -ex
+
+absnxhome="@@NUXEO_HOME@@"
+nxhome=${absnxhome:1}
+
+pushd debian/@package.name@/${nxhome}/bin
+
+for i in monitorctl.sh nuxeoctl openofficectl pack; do
+    if [ -f $i ]; then
+        chmod +x $i
+    fi
+done
+
+popd
+

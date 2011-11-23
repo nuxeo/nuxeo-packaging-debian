@@ -1,0 +1,86 @@
+Template: @package.name@/errbadip
+Type: error
+_Description: Error:
+  IP address is invalid: ${ipaddress}
+
+Template: @package.name@/errbadhttp
+Type: error
+_Description: Error:
+  HTTP port is invalid: ${httpport}
+  It must be a number between 1024 and 65535.
+
+Template: @package.name@/errhttpinuse
+Type: error
+_Description: Error:
+  Selected HTTP port (${httpport}) already in use.
+  (re-enter to force)
+
+Template: @package.name@/errbadajp
+Type: error
+_Description: Error:
+  AJP port is invalid: ${ajpport}
+  It must be a number between 1024 and 65535.
+
+Template: @package.name@/errajpinuse
+Type: error
+_Description: Error:
+  Selected AJP port (${ajpport}) already in use.
+  (re-enter to force)
+
+Template: @package.name@/bind-address
+Type: string
+Default: 0.0.0.0
+_Description: Bind address:
+  IP address you would you the server
+  to listen on.
+
+Template: @package.name@/http-port
+Type: string
+Default: 8080
+_Description: Listening port for HTTP:
+  Port you would like the server to
+  listen on for the HTTP protocol.
+
+Template: @package.name@/ajp-port
+Type: string
+Default: 0
+_Description: Listening port for AJP (0=disabled):
+  Port you would like the server to
+  listen on for the AJP protocol.
+
+Template: @package.name@/database
+Type: select
+__Choices: Autoconfigure PostgreSQL, User-configured database
+Default: Autoconfigure PostgreSQL
+_Description: Backend database:
+  Backend database to use.
+
+Template: @package.name@/customdb
+Type: select
+__Choices: PostgreSQL, Oracle, MSSQL, MySQL
+Default: PostgreSQL
+_Description: User-configured database engine:
+  Backend database engine you want to connect to.
+  Please check the following for database requirements:
+  http://doc.nuxeo.com/display/NXDOC/Configuring+Nuxeo+EP
+
+Template: @package.name@/dbhost
+Type: string
+_Description: Database host:
+
+Template: @package.name@/dbport
+Type: string
+_Description: Database port:
+
+Template: @package.name@/dbname
+Type: string
+_Description: Database name:
+
+Template: @package.name@/dbuser
+Type: string
+_Description: Database username:
+
+Template: @package.name@/dbpass
+Type: password
+_Description: Database password:
+

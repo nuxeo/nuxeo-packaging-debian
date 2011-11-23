@@ -1,0 +1,38 @@
+#!/bin/bash -e
+
+# ways we can be called
+# http://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+#
+# prerm remove
+# old-prerm upgrade new-version
+# new-prerm failed-upgrade old-version
+# conflictor's-prerm remove in-favour package new-version
+# deconfigured's-prerm deconfigure in-favour package-being-installed version [removing conflicting-package version]
+
+. /usr/share/debconf/confmodule
+db_version 2.0
+
+. /usr/lib/@package.name@/internal/pkg-helper-functions
+
+
+case "$1" in
+
+    upgrade|remove)
+        # Make sure the openoffice thread is gone
+        for i in `pgrep -u @@NUXEO_USER@@ soffice.bin`
+        do
+            kill $i
+        done
+    ;;
+
+    deconfigure|failed-upgrade)
+    ;;
+
+    *)
+        echo "prerm called with unknown argument" >&2
+        exit 1
+    ;;
+
+esac
+
+#DEBHELPER#

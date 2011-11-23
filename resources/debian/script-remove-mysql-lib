@@ -1,0 +1,11 @@
+#!/bin/bash -ex
+
+# Remove Mysql Connector/J library as the license terms aren't clear
+# MySQL is not a good idea for Nuxeo anyway, see:
+# https://doc.nuxeo.com/x/fgQz
+
+absnxhome="@@NUXEO_HOME@@"
+nxhome=${absnxhome:1}
+
+rm -rf debian/@package.name@/${nxhome}/templates/mysql/lib
+

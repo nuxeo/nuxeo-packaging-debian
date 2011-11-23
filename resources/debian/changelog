@@ -1,0 +1,5 @@
+@package.name@ (@package.fullversion@) lucid; urgency=low
+
+  * Dummy changelog file - see http://hg.nuxeo.org/tools/nuxeo-packaging-debian for SCM
+
+ -- Nuxeo Packagers <packagers@nuxeo.com>  Wed, 22 Nov 2011 16:42:00 +0200

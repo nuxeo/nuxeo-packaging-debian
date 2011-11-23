@@ -1,0 +1,22 @@
+#!/bin/bash -ex
+
+absnxhome="@@NUXEO_HOME@@"
+nxhome=${absnxhome:1}
+
+pushd debian/@package.name@/${nxhome}
+
+rm -f *.command
+rm -f *.bat
+rm -f *.exe
+rm -f bin/*.command
+rm -f bin/*.bat
+rm -f bin/*.exe
+rm -f bin/digest.sh
+rm -f bin/nxdeploy.sh
+rm -f bin/setclasspath.sh
+rm -f bin/tool-wrapper.sh
+
+rm -rf work
+
+popd
+

@@ -1,0 +1,233 @@
+#!/bin/bash -e
+
+# ways we can be called
+# http://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+#
+# postinst configure most-recently-configured-version
+# old-postinst abort-upgrade new-version
+# conflictor's-postinst abort-remove in-favour package new-version
+# postinst abort-remove
+# deconfigured's-postinst abort-deconfigure in-favour failed-install-package version [removing conflicting-package version]
+
+# Nothing to do on non-configure/reconfigure phases
+if [ "$1" != "configure" ] && [ "$1" != "reconfigure" ]; then
+    exit 0
+fi
+
+# We do not have necessary files at preconfigure step
+if [ ! -f /usr/lib/@package.name@/internal/pkg-helper-functions ]; then
+    exit 0
+fi
+
+# Is this an upgrade?
+if [ -z "$2" ]; then
+    IS_UPGRADE=false
+else
+    IS_UPGRADE=true
+fi
+
+. /usr/share/debconf/confmodule
+db_version 2.0
+
+. /usr/lib/@package.name@/internal/pkg-helper-functions
+
+# Read defaults from nuxeo.conf if it exists
+if [ -f "$NUXEO_CONF" ]; then
+    get_existing_conf
+fi
+
+
+# Only offer embedded database choice if it's already
+# in use
+#DBCHOICES="$DBAUTOPGSQL, $DBCUSTOM"
+#db_get @package.name@/database
+#if [ "$RET" = "default" ]; then
+#    DBCHOICES="$DBEMBEDDED, $DBCHOICES"
+#fi
+#db_subst @package.name@/database dbchoices $DBCHOICES
+#db_get @package.name@/database
+
+# Build custom db "pretty list"
+#CUSTOMDBCHOICES=""
+#for d in ${CUSTOMDB_NAMES[@]}; do
+#    if [ ! -z "$CUSTOMDBCHOICES" ]; then
+#        CUSTOMDBCHOICES+=", "
+#    fi
+#    CUSTOMDBCHOICES+="$d"
+#done
+#db_subst @package.name@/customdb customdbchoices $CUSTOMDBCHOICES
+
+
+STATE=1
+STATE_EXIT=5
+
+selectedip=""
+errbadip=""
+
+selectedhttp=""
+errbadhttp=""
+errhttpinuse=""
+previoushttp=""
+
+selectedajp=""
+errbadajp=""
+errajpinuse=""
+previousajp=""
+
+while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
+    case "$STATE" in
+
+    1)
+        db_capb escape
+        db_beginblock
+        if [ ! -z "$errbadip" ]; then
+            db_subst @package.name@/errbadip ipaddress $selectedip
+            db_input high @package.name@/errbadip || true
+            errbadip=""
+        fi
+        db_input high @package.name@/bind-address || true
+        db_endblock
+    ;;
+
+    2)
+        db_capb escape backup
+        db_beginblock
+        if [ ! -z "$errbadhttp" ]; then
+            db_subst @package.name@/errbadhttp httpport $selectedhttp
+            db_input high @package.name@/errbadhttp || true
+            errbadhttp=""
+        fi
+        if [ ! -z "$errhttpinuse" ]; then
+            db_subst @package.name@/errhttpinuse httpport $selectedhttp
+            db_input high @package.name@/errhttpinuse || true
+            errhttpinuse=""
+        fi
+        db_input high @package.name@/http-port || true
+        db_endblock
+    ;;
+
+    3)
+        db_capb escape backup
+        db_beginblock
+        if [ ! -z "$errbadajp" ]; then
+            db_subst @package.name@/errbadajp ajpport $selectedajp
+            db_input high @package.name@/errbadajp || true
+            errbadajp=""
+        fi
+        if [ ! -z "$errajpinuse" ]; then
+            db_subst @package.name@/errajpinuse ajpport $selectedajp
+            db_input high @package.name@/errajpinuse || true
+            errajpinuse=""
+        fi
+        db_get @package.name@/ajp-port
+        if [ "$RET" != "0" ]; then
+            db_input high @package.name@/ajp-port || true
+        fi
+        db_endblock
+    ;;
+
+    4)
+        db_capb escape backup
+        db_input high @package.name@/database || true
+    ;;
+
+    5)
+        db_input high @package.name@/customdb || true
+    ;;
+
+    6)
+        db_beginblock
+        db_input high @package.name@/dbhost || true
+        db_input high @package.name@/dbport || true
+        db_input high @package.name@/dbname || true
+        db_input high @package.name@/dbuser || true
+        db_input high @package.name@/dbpass || true
+        db_endblock
+    ;;
+
+    esac
+
+    if db_go; then
+
+        # Validate IP input
+        if [ "$STATE" = "1" ]; then
+            db_get @package.name@/bind-address
+            selectedip=$RET
+            validate_ip_address $selectedip
+            if [ "$RET" = "false" ]; then
+                errbadip="true"
+                # Reset to avoid infinite loops in non-interactive mode
+                db_reset @package.name@/bind-address
+            fi
+            if [ ! -z "$errbadip" ]; then
+                STATE=$(($STATE-1))
+            fi
+        fi
+
+        # Validate HTTP port input
+        if [ "$STATE" = "2" ]; then
+            db_get @package.name@/http-port
+            selectedhttp=$RET
+            validate_port_syntax $selectedhttp
+            if [ "$RET" = "false" ]; then
+                errbadhttp="true"
+                # Reset to avoid infinite loops in non-interactive mode
+                db_reset @package.name@/http-port
+            else
+                if [ "$IS_UPGRADE" = "false" ]; then
+                    check_ip_port_free $selectedip $selectedhttp
+                    if [ "$RET" = "false" ] && [ "$previoushttp" != "$selectedhttp" ]; then
+                        previoushttp=$selectedhttp
+                        errhttpinuse="true"
+                    fi
+                fi
+            fi
+            if [ ! -z "$errbadhttp" ] || [ ! -z "$errhttpinuse" ]; then
+                STATE=$(($STATE-1))
+            fi
+        fi
+
+        # Validate AJP port input
+        if [ "$STATE" = "3" ]; then
+            db_get @package.name@/ajp-port
+            selectedajp=$RET
+            validate_port_syntax $selectedajp
+            if [ "$RET" = "false" ] && [ "$selectedajp" != "0" ]; then
+                errbadajp="true"
+                # Reset to avoid infinite loops in non-interactive mode
+                db_reset @package.name@/ajp-port
+            else
+                if [ "$IS_UPGRADE" = "false" ]; then
+                    check_ip_port_free $selectedip $selectedajp
+                    if [ "$RET" = "false" ] && [ "$previousajp" != "$selectedajp" ]; then
+                        previousajp=$selectedajp
+                        errajpinuse="true"
+                    fi
+                fi
+            fi
+
+            if [ ! -z "$errbadajp" ] || [ ! -z "$errajpinuse" ]; then
+                STATE=$(($STATE-1))
+            fi
+
+        fi
+
+        # If the user selects a "custom" db, ask for more parameters
+        if [ "$STATE" = "4" ]; then
+            db_get @package.name@/database
+            if [ "$RET" = "$DBCUSTOM" ]; then
+                STATE_EXIT=7
+            else
+                STATE_EXIT=5
+            fi
+        fi
+
+        STATE=$(($STATE+1))
+    else
+        STATE=$(($STATE-1))
+    fi
+
+done
+
+db_stop
+

@@ -1,0 +1,7 @@
+# /opt seems to be the best place for the application
+@package.name@ binary: dir-or-file-in-opt
+
+# Misc license files will be removed when copyright file is more complete.
+# In the meantime, ignore related lintian warnings
+@package.name@ binary: extra-license-file
+

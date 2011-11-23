@@ -1,0 +1,10 @@
+#!/bin/bash -ex
+
+absnxhome="@@NUXEO_HOME@@"
+nxhome=${absnxhome:1}
+
+cat << EOF >> debian/@package.name@/${nxhome}/templates/common/config/distribution.properties
+
+org.nuxeo.distribution.package=deb
+EOF
+

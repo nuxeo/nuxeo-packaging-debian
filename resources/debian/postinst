@@ -1,0 +1,274 @@
+#!/bin/bash -e
+
+# ways we can be called
+# http://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+#
+# postinst configure most-recently-configured-version
+# old-postinst abort-upgrade new-version
+# conflictor's-postinst abort-remove in-favour package new-version
+# postinst abort-remove
+# deconfigured's-postinst abort-deconfigure in-favour failed-install-package version [removing conflicting-package version]
+
+. /usr/share/debconf/confmodule
+db_version 2.0
+
+.  /usr/lib/@package.name@/internal/pkg-helper-functions
+
+
+configure_paths() {
+
+    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_HOME@@
+    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_DATA@@
+    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_ETC@@
+    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_LOG@@
+    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_PID@@
+
+}
+
+
+random_password() {
+
+    l=0
+    while [ $l -lt 8 ]; do
+        read -n 1000 urandom < /dev/urandom
+        rndanum=$(echo $urandom | tr -cd "a-zA-Z0-9")
+        l=${#rndanum}
+    done
+    RET=$(echo $rndanum | head -c 8)
+
+}
+
+
+setup_postgresql() {
+
+    # Change to /tmp to avoid 'could not change directory to "/root"' messages
+    pushd /tmp > /dev/null
+
+    # Generate en_US-UTF-8 locale in case it's not in the system yet
+    locale-gen --no-purge en_US.UTF-8
+
+    # Check whether nuxeo cluster already exists
+    nxcluster=$(pg_lsclusters -h | grep $PGCLUSTER) || true
+    if [ -z "$nxcluster" ]; then
+        # get highest postgresql version
+        # no sort -V on debian yet, using -u. Will need to change for PostgreSQL 10
+        pgversion=$(pg_lsclusters -h | sort -u | tail -1 | awk '{print $1}')
+        if [ -z "$pgversion" ]; then
+            pgversion=$PGDEFAULTVERSION
+        fi
+        # create cluster
+        pg_createcluster --locale=en_US.UTF-8 $pgversion $PGCLUSTER
+        # fix postgresql conf
+        pgconf="/etc/postgresql/$pgversion/$PGCLUSTER/postgresql.conf"
+        perl -p -i -e "s/^#?shared_buffers\s*=.*$/shared_buffers = 100MB/" $pgconf
+        perl -p -i -e "s/^#?max_prepared_transactions\s*=.*$/max_prepared_transactions = 32/" $pgconf
+        perl -p -i -e "s/^#?effective_cache_size\s*=.*$/effective_cache_size = 1GB/" $pgconf
+        perl -p -i -e "s/^#?work_mem\s*=.*$/work_mem = 32MB/" $pgconf
+        perl -p -i -e "s/^#?wal_buffers\s*=.*$/wal_buffers = 8MB/" $pgconf
+        perl -p -i -e "s/^#?lc_messages\s*=.*$/lc_messages = 'en_US.UTF-8'/" $pgconf
+        perl -p -i -e "s/^#?lc_time\s*=.*$/lc_time = 'en_US.UTF-8'/" $pgconf
+        perl -p -i -e "s/^#?log_line_prefix\s*=.*$/log_line_prefix = '%t [%p]: [%l-1] '/" $pgconf
+        # fix shmmax
+        oldshmmod=$(grep 'After nuxeo install' /etc/sysctl.conf) || true
+        if [ -z "$oldshmmod" ]; then
+            currentmax=$(grep -E "^kernel.shmmax\s*=" /etc/sysctl.conf | tail -n 1 | cut -d= -f2 | tr -d ' ')
+            if [ -z "$currentmax" ]; then
+                currentmax=$(sysctl kernel.shmmax | cut -d= -f2 | tr -d ' ')
+            fi
+            newmax=$(($currentmax+268435456)) # Add 256MB
+            perl -n -i -e "print unless /^kernel.shmmax\s*=/" /etc/sysctl.conf
+            echo "# Do not remove those lines (needed by Nuxeo removal scripts):" >> /etc/sysctl.conf
+            echo "# Before nuxeo install: shmmax = $currentmax" >> /etc/sysctl.conf
+            echo "# After nuxeo install: shmmax = $newmax" >> /etc/sysctl.conf
+            echo "kernel.shmmax = $newmax" >> /etc/sysctl.conf
+            sysctl -w kernel.shmmax=$newmax
+        fi
+        # start cluster
+        pg_ctlcluster $pgversion $PGCLUSTER start
+    else
+        # make sure cluster is started
+        pgversion=$(echo $nxcluster | awk '{print $1}')
+        pgstatus=$(echo $nxcluster | awk '{print $4}')
+        if [ "$pgstatus" != "online" ]; then
+            pg_ctlcluster $pgversion $PGCLUSTER start
+        fi
+    fi
+
+    # Get cluster info to connect to the database
+    pgport=$(pg_lsclusters -h | grep $PGCLUSTER | awk '{print $3}')
+    db_get @package.name@/dbpass
+    pgpass=$RET
+    if [ -z "$pgpass" ]; then
+        random_password
+        pgpass=$RET
+    fi
+
+    # Create user,language and functions if missing
+    su postgres -c "psql -p $pgport template1 --quiet -t -f-" << EOF > /dev/null
+CREATE OR REPLACE FUNCTION mknxuser() RETURNS VOID LANGUAGE SQL AS \$\$
+CREATE USER @package.name.clean@ WITH PASSWORD '$pgpass';
+\$\$;
+SELECT
+    CASE WHEN EXISTS (
+        SELECT 1 FROM pg_user WHERE usename='@package.name.clean@'
+    ) THEN NULL
+    ELSE mknxuser()
+    END;
+DROP FUNCTION mknxuser();
+
+CREATE OR REPLACE FUNCTION mkplpgsql() RETURNS VOID LANGUAGE SQL AS \$\$
+CREATE LANGUAGE plpgsql;
+\$\$;
+SELECT
+    CASE WHEN EXISTS (
+        SELECT 1 FROM pg_catalog.pg_language WHERE lanname='plpgsql'
+    ) THEN NULL
+    ELSE mkplpgsql()
+    END;
+DROP FUNCTION mkplpgsql();
+
+CREATE OR REPLACE FUNCTION mktxtint() RETURNS VOID LANGUAGE SQL AS \$\$
+CREATE FUNCTION pg_catalog.text(integer) RETURNS text STRICT IMMUTABLE LANGUAGE SQL AS 'SELECT textin(int4out(\$1));';
+CREATE CAST (integer AS text) WITH FUNCTION pg_catalog.text(integer) AS IMPLICIT;
+COMMENT ON FUNCTION pg_catalog.text(integer) IS 'convert integer to text';
+\$\$;
+SELECT
+    CASE WHEN EXISTS (
+        SELECT 1 FROM pg_catalog.pg_proc WHERE proname='text' AND prosrc='SELECT textin(int4out(\$1));'
+    ) THEN NULL
+    ELSE mktxtint()
+    END;
+DROP FUNCTION mktxtint();
+
+CREATE OR REPLACE FUNCTION mktxtbigint() RETURNS VOID LANGUAGE SQL AS \$\$
+CREATE FUNCTION pg_catalog.text(bigint) RETURNS text STRICT IMMUTABLE LANGUAGE SQL AS 'SELECT textin(int8out(\$1));';
+CREATE CAST (bigint AS text) WITH FUNCTION pg_catalog.text(bigint) AS IMPLICIT;
+COMMENT ON FUNCTION pg_catalog.text(bigint) IS 'convert bigint to text';
+\$\$;
+SELECT
+    CASE WHEN EXISTS (
+        SELECT 1 FROM pg_catalog.pg_proc WHERE proname='text' AND prosrc='SELECT textin(int8out(\$1));'
+    ) THEN NULL
+    ELSE mktxtbigint()
+    END;
+DROP FUNCTION mktxtbigint();
+
+EOF
+
+    # Create database if missing
+    hasnxdb=$(echo "\\l" | su postgres -c "psql -p $pgport template1 --quiet -t -f-" | awk '{print $1}' | grep "@package.name.clean@") || true
+    if [ -z "$hasnxdb" ]; then
+        su postgres -c "createdb -p $pgport -O @package.name.clean@ -E UTF-8 @package.name.clean@"
+    fi
+
+    # Save values in nuxeo.conf
+    set_conf_var nuxeo.db.host localhost
+    set_conf_var nuxeo.db.port $pgport
+    set_conf_var nuxeo.db.name @package.name.clean@
+    set_conf_var nuxeo.db.user @package.name.clean@
+    set_conf_var nuxeo.db.password $pgpass
+
+    # Switch back to normal directory
+    popd > /dev/null
+
+}
+
+
+configure_nuxeo() {
+
+    # Do the modifications according to choices made in the config script
+
+    db_get @package.name@/bind-address
+    set_conf_var nuxeo.bind.address $RET
+    db_get @package.name@/http-port
+    set_conf_var nuxeo.server.http.port $RET
+    db_get @package.name@/ajp-port
+    set_conf_var nuxeo.server.ajp.port $RET
+    # randomize nuxeo.server.tomcat-admin.port if not set
+    get_conf_var nuxeo.server.tomcat-admin.port
+    adminport=$RET
+    if [ -z "$adminport" ]; then
+        validated=false
+        while [ $validated = false ]; do
+            adminport=$(($(($RANDOM%9999))+50000))
+            check_ip_port_free 127.0.0.1 $adminport
+            validated=$RET
+        done
+    fi
+    set_conf_var nuxeo.server.tomcat-admin.port $adminport
+
+    db_get @package.name@/database
+    if [ "$RET" = "$DBEMBEDDED" ]; then
+        set_db_template default
+    elif [ "$RET" = "$DBAUTOPGSQL" ]; then
+        set_db_template postgresql
+        set_conf_var nuxeo.debconf.pgsqldb auto
+        setup_postgresql
+    else
+        db_get @package.name@/customdb
+        for ((i=0; i<${#CUSTOMDB_NAMES[@]}; i++)); do
+            if [ "${CUSTOMDB_NAMES[$i]}" = "$RET" ]; then
+                set_db_template ${CUSTOMDB_LIST[$i]}
+                if [ "${CUSTOMDB_NAMES[$i]}" = "PostgreSQL" ]; then
+                    set_conf_var nuxeo.debconf.pgsqldb custom
+                fi
+            fi
+        done
+        db_get @package.name@/dbhost
+        set_conf_var nuxeo.db.host $RET
+        db_get @package.name@/dbport
+        set_conf_var nuxeo.db.port $RET
+        db_get @package.name@/dbname
+        set_conf_var nuxeo.db.name $RET
+        db_get @package.name@/dbuser
+        set_conf_var nuxeo.db.user $RET
+        db_get @package.name@/dbpass
+        set_conf_var nuxeo.db.password $RET
+    fi
+
+    # Fix openoffice path
+    if [ ! -d /opt/openoffice.org3 ]; then
+        get_conf_var jod.office.home
+        if [ -z "$RET" ] && [ -d /usr/lib/openoffice ]; then
+            set_conf_var jod.office.home /usr/lib/openoffice
+        fi
+    fi
+
+}
+
+activate_wizard() {
+
+    set_conf_var nuxeo.wizard.done false
+
+}
+
+
+# dpkg-reconfigure
+if [ "$1" = "reconfigure" ] || [ "$DEBCONF_RECONFIGURE" ]; then
+    configure_paths
+    get_existing_conf
+    configure_nuxeo
+    db_stop
+# new install (old version not set)
+elif [ "$1" = "configure" ] && [ -z "$2" ]; then
+    create_user
+    configure_paths
+    configure_nuxeo
+    activate_wizard
+    db_stop
+# upgrade (old version set)
+elif [ "$1" = "configure" ]; then
+    create_user
+    configure_paths
+    get_existing_conf
+    configure_nuxeo
+    db_stop
+# other
+elif [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-remove" ] || [ "$1" = "abort-deconfigure" ]; then
+    echo "Not doing anything"
+else
+    echo "postinst called with unknown argument"
+    exit 1
+fi
+
+#DEBHELPER#

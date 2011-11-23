@@ -1,0 +1,20 @@
+#!/bin/bash -ex
+
+absetcdir="@@NUXEO_ETC@@"
+absnxhome="@@NUXEO_HOME@@"
+
+etcdir=${absetcdir:1}
+nxhome=${absnxhome:1}
+
+pushd debian/@package.name@
+
+mkdir -p ${etcdir}
+mv ${nxhome}/bin/nuxeo.conf ${etcdir}/nuxeo.conf
+cat << EOF >> ${etcdir}/nuxeo.conf
+JAVA_HOME=/usr/lib/jvm/java-6-sun
+nuxeo.log.dir=@@NUXEO_LOG@@
+nuxeo.pid.dir=@@NUXEO_PID@@
+nuxeo.data.dir=@@NUXEO_DATA@@
+EOF
+
+popd

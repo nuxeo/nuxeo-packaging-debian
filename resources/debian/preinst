@@ -1,0 +1,73 @@
+#!/bin/bash -e
+
+# ways we can be called
+# http://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+#
+# new-preinst install
+# new-preinst install old-version
+# new-preinst upgrade old-version
+# old-preinst abort-upgrade new-version
+
+NUXEO_CONF="@@NUXEO_ETC@@/nuxeo.conf"
+
+get_conf_var() {
+
+    RET=$(grep -E "^$1\s*=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr -d ' ')
+
+}
+
+remove_old_templates() {
+
+    if [ -d @@NUXEO_CONFIG_DIR@@ ]; then
+        mv @@NUXEO_CONFIG_DIR@@ @@NUXEO_CONFIG_DIR@@.`date +"%Y%m%d_%H%M%S"`
+    fi
+
+}
+
+remove_old_bundles() {
+
+    # Delete everything from bundles
+    if [ -d @@NUXEO_BUNDLE_DIR@@ ]; then
+        rm -rf "@@NUXEO_BUNDLE_DIR@@"
+    fi
+
+    # Set marketplace packages status to uninstalled
+    get_conf_var nuxeo.data.dir
+    if [ -n "$RET" ]; then
+        datadir=$RET
+    else
+        datadir=@@NUXEO_DATA@@
+    fi
+    pkgfile="$datadir/packages/.packages"
+    if [ -f "$pkgfile" ]; then
+        perl -p -i -e "s/([^=]+)=[^01]+/\\1=2\n/" $pkgfile
+    fi
+
+}
+
+
+case "$1" in
+
+    install)
+        mkdir -p @@NUXEO_DATA@@
+        mkdir -p @@NUXEO_ETC@@
+        mkdir -p @@NUXEO_LOG@@
+        mkdir -p @@NUXEO_PID@@
+    ;;
+
+    upgrade)
+        remove_old_templates
+        remove_old_bundles
+    ;;
+
+    abort-upgrade)
+    ;;
+
+    *)
+        echo "preinst called with unknown argument" >&2
+        exit 1
+    ;;
+
+esac
+
+#DEBHELPER#
