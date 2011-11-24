@@ -8,7 +8,7 @@
 # new-preinst upgrade old-version
 # old-preinst abort-upgrade new-version
 
-NUXEO_CONF="@@NUXEO_ETC@@/nuxeo.conf"
+NUXEO_CONF="@nuxeo.etc.dir@/nuxeo.conf"
 
 get_conf_var() {
 
@@ -18,8 +18,8 @@ get_conf_var() {
 
 remove_old_templates() {
 
-    if [ -d @@NUXEO_CONFIG_DIR@@ ]; then
-        mv @@NUXEO_CONFIG_DIR@@ @@NUXEO_CONFIG_DIR@@.`date +"%Y%m%d_%H%M%S"`
+    if [ -d @nxserver.config.dir@ ]; then
+        mv @nxserver.config.dir@ @nxserver.config.dir@.`date +"%Y%m%d_%H%M%S"`
     fi
 
 }
@@ -27,8 +27,8 @@ remove_old_templates() {
 remove_old_bundles() {
 
     # Delete everything from bundles
-    if [ -d @@NUXEO_BUNDLE_DIR@@ ]; then
-        rm -rf "@@NUXEO_BUNDLE_DIR@@"
+    if [ -d @nxserver.bundle.dir@ ]; then
+        rm -rf "@nxserver.bundle.dir@"
     fi
 
     # Set marketplace packages status to uninstalled
@@ -36,7 +36,7 @@ remove_old_bundles() {
     if [ -n "$RET" ]; then
         datadir=$RET
     else
-        datadir=@@NUXEO_DATA@@
+        datadir=@nuxeo.data.dir@
     fi
     pkgfile="$datadir/packages/.packages"
     if [ -f "$pkgfile" ]; then
@@ -49,10 +49,10 @@ remove_old_bundles() {
 case "$1" in
 
     install)
-        mkdir -p @@NUXEO_DATA@@
-        mkdir -p @@NUXEO_ETC@@
-        mkdir -p @@NUXEO_LOG@@
-        mkdir -p @@NUXEO_PID@@
+        mkdir -p @nuxeo.data.dir@
+        mkdir -p @nuxeo.etc.dir@
+        mkdir -p @nuxeo.log.dir@
+        mkdir -p @nuxeo.pid.dir@
     ;;
 
     upgrade)

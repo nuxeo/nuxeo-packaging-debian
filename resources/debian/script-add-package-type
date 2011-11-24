@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-absnxhome="@@NUXEO_HOME@@"
+absnxhome="@nuxeo.home.dir@"
 nxhome=${absnxhome:1}
 
 cat << EOF >> debian/@package.name@/${nxhome}/templates/common/config/distribution.properties

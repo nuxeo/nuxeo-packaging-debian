@@ -1,9 +1,11 @@
 #!/bin/bash -ex
 
-absnxhome="@@NUXEO_HOME@@"
+absnxhome="@nuxeo.home.dir@"
 nxhome=${absnxhome:1}
 
 mkdir -p debian/@package.name@/${nxhome}
-rsync -Waxq --exclude 'build-stamp' --exclude '@@PKG_FILES@@' --exclude 'debian' * debian/@package.name@/${nxhome}
-rsync -Waxq @@PKG_FILES@@/* debian/@package.name@/
+cp -a distribution/* debian/@package.name@/${nxhome}/
+
+mkdir -p debian/@package.name@/usr/lib/@package.name@/
+cp -a static_lib/* debian/@package.name@/usr/lib/@package.name@/
 

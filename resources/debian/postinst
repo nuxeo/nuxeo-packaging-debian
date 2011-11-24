@@ -17,11 +17,11 @@ db_version 2.0
 
 configure_paths() {
 
-    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_HOME@@
-    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_DATA@@
-    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_ETC@@
-    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_LOG@@
-    chown -R @@NUXEO_USER@@:@@NUXEO_USER@@ @@NUXEO_PID@@
+    chown -R @package.name.clean@:@package.name.clean@ @nuxeo.home.dir@
+    chown -R @package.name.clean@:@package.name.clean@ @nuxeo.data.dir@
+    chown -R @package.name.clean@:@package.name.clean@ @nuxeo.etc.dir@
+    chown -R @package.name.clean@:@package.name.clean@ @nuxeo.log.dir@
+    chown -R @package.name.clean@:@package.name.clean@ @nuxeo.pid.dir@
 
 }
 

@@ -10,8 +10,8 @@
 
 DESC="Nuxeo"
 
-NUXEO_USER=@@NUXEO_USER@@
-NUXEO_CONF=@@NUXEO_ETC@@/nuxeo.conf
+NUXEO_USER=@package.name.clean@
+NUXEO_CONF=@nuxeo.etc.dir@/nuxeo.conf
 export NUXEO_CONF
 
 . /lib/init/vars.sh
@@ -19,8 +19,8 @@ export NUXEO_CONF
 
 
 create_pid_dir() {
-    mkdir -p @@NUXEO_PID@@
-    chown $NUXEO_USER:$NUXEO_USER @@NUXEO_PID@@
+    mkdir -p @nuxeo.pid.dir@
+    chown $NUXEO_USER:$NUXEO_USER @nuxeo.pid.dir@
 }
 
 # Change ulimit to minimum needed by Nuxeo
@@ -30,26 +30,26 @@ case "$1" in
   start)
         log_daemon_msg "Starting $DESC"
         create_pid_dir
-        su $NUXEO_USER -m -c "@@NUXEO_HOME@@/bin/nuxeoctl startbg"
+        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl startbg"
         ES=$?
         log_end_msg $ES
         ;;
   stop)
         log_daemon_msg "Stopping $DESC"
-        su $NUXEO_USER -m -c "@@NUXEO_HOME@@/bin/nuxeoctl stop"
+        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl stop"
         ES=$?
         log_end_msg $ES
         ;;
   restart)
         create_pid_dir
-        su $NUXEO_USER -m -c "@@NUXEO_HOME@@/bin/nuxeoctl restart"
+        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl restart"
         ;;
   force-reload)
         create_pid_dir
-        su $NUXEO_USER -m -c "@@NUXEO_HOME@@/bin/nuxeoctl restart"
+        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl restart"
         ;;
   status)
-        su $NUXEO_USER -m -c "@@NUXEO_HOME@@/bin/nuxeoctl --quiet status"
+        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl --quiet status"
         exit $?
         ;;
   *)

@@ -21,12 +21,12 @@ PGDEFAULTVERSION="8.4"
 
 
 delete_user() {
-    if getent passwd @@NUXEO_USER@@  >/dev/null; then
+    if getent passwd @package.name.clean@  >/dev/null; then
         delusercmd=$(which deluser)
         if [ -n "$delusercmd" ] && [ -x $delusercmd ]; then
-            deluser @@NUXEO_USER@@
+            deluser @package.name.clean@
         else
-            echo "cannot remove @@NUXEO_USER@@: deluser command not found" >&2
+            echo "cannot remove @package.name.clean@: deluser command not found" >&2
         fi
     fi
 }
@@ -85,12 +85,12 @@ case "$1" in
 
     purge)
         # Make sure all the files are removed
-        rm -rf @@NUXEO_HOME@@
-        rm -rf @@NUXEO_DATA@@
-        # Don't remove @@NUXEO_ETC@@ as there may be custom user templates there
-        #rm -rf @@NUXEO_ETC@@
-        rm -rf @@NUXEO_LOG@@
-        rm -rf @@NUXEO_PID@@
+        rm -rf @nuxeo.home.dir@
+        rm -rf @nuxeo.data.dir@
+        # Don't remove @nuxeo.etc.dir@ as there may be custom user templates there
+        #rm -rf @nuxeo.etc.dir@
+        rm -rf @nuxeo.log.dir@
+        rm -rf @nuxeo.pid.dir@
 
         delete_user
 

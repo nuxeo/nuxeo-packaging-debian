@@ -13,6 +13,7 @@
 
     <!-- Get variables from environment if set, use defaults otherwise -->
     <target name="init-from-env">
+        <property environment="env" />
         <!-- distribution settings -->
         <condition property="distribution.groupId" value="${env.distribution.groupId}"
                    else="org.nuxeo.ecm.distribution">
@@ -165,13 +166,13 @@
              Given an identical source package, the archive must be identical every time -->
         <echo message="*** Repack as .orig.tar.gz ***" />
         <!-- Since preservelastmodified doesn't seem to work correctly, set all files to fixed date -->
-        <touch millis="0">
+        <touch datetime="01/01/2000 1:00 am">
             <fileset dir="${out.dir}/${package.name}-${debian.version}">
                 <include name="**" />
             </fileset>
         </touch>
         <!-- Pack and compress -->
-        <tar destfile="${out.dir}/${package.name}-${debian.version}.orig.tar.gz" compression="gzip">
+        <tar destfile="${out.dir}/${package.name}_${debian.version}.orig.tar.gz" compression="gzip">
             <tarfileset dir="${out.dir}" username="root" group="root">
                 <include name="${package.name}-${debian.version}/**" />
             </tarfileset>
@@ -179,15 +180,30 @@
 
         <!-- Prepare structure for dpkg-buildpackage -->
         <echo message="*** Prepare structure for dpkg-buildpackage ***" />
+        <filterset id="nxvars">
+            <filter token="package.name" value="${package.name}" />
+            <filter token="package.name.clean" value="${package.name.clean}" />
+            <filter token="package.fullversion" value="${debian.version}-${debian.revision}" />
+            <filter token="nuxeo.home.dir" value="/opt/${package.name}" />
+            <filter token="nuxeo.etc.dir" value="/etc/${package.name}" />
+            <filter token="nuxeo.data.dir" value="/var/lib/${package.name}" />
+            <filter token="nuxeo.log.dir" value="/var/log/${package.name}" />
+            <filter token="nuxeo.pid.dir" value="/var/run/${package.name}" />
+            <!-- specific to the tomcat distributions -->
+            <filter token="nxserver.config.dir" value="/opt/${package.name}/nxserver/config" />
+            <filter token="nxserver.bundle.dir" value="/opt/${package.name}/nxserver/bundles" />
+        </filterset>
         <copy todir="${out.dir}/${package.name}-${debian.version}/debian">
             <fileset dir="${maven.basedir}/resources/debian">
                 <include name="**" />
             </fileset>
-            <filterset>
-                <filter token="package.name" value="${package.name}" />
-                <filter token="package.name.clean" value="${package.name.clean}" />
-                <filter token="package.fullversion" value="${debian.version}-${debian.revision}" />
-            </filterset>
+            <filterset refid="nxvars" />
+        </copy>
+        <copy todir="${out.dir}/${package.name}-${debian.version}/static_lib">
+            <fileset dir="${maven.basedir}/resources/static_lib">
+                <include name="**" />
+            </fileset>
+            <filterset refid="nxvars" />
         </copy>
         <if>
             <not>
@@ -196,16 +212,83 @@
             <then>
                 <move file="${out.dir}/${package.name}-${debian.version}/debian/nuxeo.init" tofile="${out.dir}/${package.name}-${debian.version}/debian/${package.name}.init" />
                 <move file="${out.dir}/${package.name}-${debian.version}/debian/nuxeo.README.Debian" tofile="${out.dir}/${package.name}-${debian.version}/debian/${package.name}.README.Debian" />
+                <move file="${out.dir}/${package.name}-${debian.version}/debian/nuxeo.lintian-overrides" tofile="${out.dir}/${package.name}-${debian.version}/debian/${package.name}.lintian-overrides" />
             </then>
         </if>
 
     </target>
 
-    <target name="package" depends="setup">
 
-        <fail message="Done... but not complete yet!" />
+    <!-- Build the source package -->
+    <target name="source-package" depends="setup">
+
+        <echo message="*** Build source package ***" />
+        <exec dir="${out.dir}/${package.name}-${debian.version}"
+              executable="dpkg-buildpackage">
+            <arg value="-rfakeroot" />
+            <arg value="-pgpgsign" />
+            <arg value="-sgpg" />
+            <arg value="-S" />
+            <env key="PATH" path="${maven.basedir}/bin:${env.PATH}" />
+        </exec>
 
     </target>
 
+
+    <!-- Build the binary package -->
+    <target name="binary-package" depends="source-package">
+
+        <echo message="*** Build binary package ***" />
+        <exec dir="${out.dir}/${package.name}-${debian.version}"
+              executable="dpkg-buildpackage">
+            <arg value="-rfakeroot" />
+            <arg value="-A" />
+            <arg value="-uc" />
+            <env key="PATH" path="${maven.basedir}/bin:${env.PATH}" />
+        </exec>
+
+    </target>
+
+
+    <!-- Move resulting packages -->
+    <target name="move-packages" depends="binary-package">
+
+        <echo message="*** Move files to packages directory ***" />
+        <move file="${out.dir}/${package.name}_${debian.version}-${debian.revision}_all.deb" todir="${out.dir}/packages/${package.type}" />
+        <move todir="${out.dir}/packages/src">
+            <filelist dir="${out.dir}">
+                <file name="${package.name}_${debian.version}.orig.tar.gz" />
+                <file name="${package.name}_${debian.version}-${debian.revision}.diff.gz" />
+                <file name="${package.name}_${debian.version}-${debian.revision}.dsc" />
+                <file name="${package.name}_${debian.version}-${debian.revision}_source.changes" />
+            </filelist>
+        </move>
+
+    </target>
+
+
+    <!-- Run lintian on the results -->
+    <target name="lintian" depends="move-packages">
+
+        <echo message="*** Running lintian on the source package ***" />
+        <exec dir="${out.dir}/packages/src"
+              executable="lintian">
+            <arg value="-cEI" />
+            <arg value="${package.name}_${debian.version}-${debian.revision}.dsc" />
+        </exec>
+
+        <echo message="*** Running lintian on the binary package ***" />
+        <exec dir="${out.dir}/packages/${package.type}"
+              executable="lintian">
+            <arg value="-cEI" />
+            <arg value="${package.name}_${debian.version}-${debian.revision}_all.deb" />
+        </exec>
+
+    </target>
+
+
+    <!-- Main target -->
+    <target name="package" depends="lintian">
+    </target>
 
 </project>
