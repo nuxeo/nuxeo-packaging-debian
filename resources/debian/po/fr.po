@@ -135,8 +135,8 @@ msgstr "Configurer PostgreSQL automatiquement"
 #. Type: select
 #. Choices
 #: ../templates:9001
-msgid "Custom (configure in wizard)"
-msgstr "Base personalisée (configurer dans le wizard)"
+msgid "Configure database in wizard"
+msgstr "Configurer la base de données dans l'assistant"
 
 #. Type: select
 #. Description
@@ -149,4 +149,16 @@ msgstr "Base de données:"
 #: ../templates:9002
 msgid " Backend database to use."
 msgstr " Base de données à utiliser."
+
+#.Type: boolean
+#. Description
+#: ../templates:10001
+msgid "for internal use"
+msgstr "a usage interne"
+
+#.Type: boolean
+#. Description
+#: ../templates:10002
+msgid " Internal use"
+msgstr " Usage interne"
 

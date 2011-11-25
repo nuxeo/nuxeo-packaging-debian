@@ -5,7 +5,7 @@ NUXEO_CONF="@nuxeo.etc.dir@/nuxeo.conf"
 DB_LIST=("default" "postgresql" "oracle" "mssql" "mysql")
 
 DBAUTOPGSQL="Autoconfigure PostgreSQL"
-DBCUSTOM="Custom (configure in wizard)"
+DBCUSTOM="Configure database in wizard"
 
 PGCLUSTER="nuxeodb"
 PGDEFAULTVERSION="8.4"
@@ -13,7 +13,7 @@ PGDEFAULTVERSION="8.4"
 
 create_user() {
     if ! getent passwd @package.name.clean@  >/dev/null; then
-        echo -n "Adding user @package.name.clean@... "
+        echo "*** Adding user @package.name.clean@ ***"
         adduser --system --home @nuxeo.home.dir@ \
                 --no-create-home \
                 --group --shell /bin/bash @package.name.clean@
@@ -93,16 +93,6 @@ set_conf_var() {
 
 }
 
-del_conf_var() {
-
-    key=$1
-    has_key=$(grep -E "^$key=" $NUXEO_CONF | wc -l)
-    if [ "$has_key" != 0 ]; then
-        perl -p -i -e "s:^$key=:#$key=:g" $NUXEO_CONF
-    fi
-
-}
-
 get_templates_list() {
 
     RET=$(grep -E "^#?nuxeo.templates=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr "," " ")
@@ -151,7 +141,6 @@ get_existing_conf() {
 
     # If using the PostgreSQL database, check for "autoconf" key
     # to see whether this is a custom PostgreSQL or an "Auto" one.
-    # This should later be replaced by a check against autoconf values.
 
     get_conf_var nuxeo.bind.address
     if [ ! -z "$RET" ]; then
@@ -166,21 +155,25 @@ get_existing_conf() {
         db_set @package.name@/ajp-port $RET
     fi
 
-    get_conf_var nuxeo.debconf.pgsqldb
+    get_conf_var nuxeo.installer.useautopg
     AUTOPG=$RET
     get_db_template
     if [ ! -z "$RET" ]; then
         DB=$RET
-        if [ "$DB" = "default" ]; then
+        # Database never configured yet -> default = autopg
+        if [ "$DB" = "default" -a "$AUTOPG" != "false" ]; then
             db_set @package.name@/database $DBAUTOPGSQL
-        elif [ "$DB" = "postgresql" -a "$AUTOPG" = "auto" ]; then
+        # Previous choise was autopg -> default = autopg
+        elif [ "$DB" = "postgresql" -a "$AUTOPG" = "true" ]; then
             db_set @package.name@/database $DBAUTOPGSQL
+        # Previous choise was custom -> default = custom
         else
             db_set @package.name@/database $DBCUSTOM
         fi
-
-
     fi
+
+    get_conf_var nuxeo.installer.installedpg
+    db_set @package.name@/installedpg $RET
 
 }
 

@@ -22,6 +22,7 @@ PGDEFAULTVERSION="8.4"
 
 delete_user() {
     if getent passwd @package.name.clean@  >/dev/null; then
+        echo "*** Removing user @package.name.clean@ ***"
         delusercmd=$(which deluser)
         if [ -n "$delusercmd" ] && [ -x $delusercmd ]; then
             deluser @package.name.clean@
@@ -41,6 +42,7 @@ cleanup_nuxeo_cluster() {
     pushd /tmp > /dev/null
     nxcluster=$(pg_lsclusters -h | grep $PGCLUSTER) || true
     if [ ! -z "$nxcluster" ]; then
+        echo "*** Removing database dedicated to @package.name.clean@ ***"
         pgversion=$(echo $nxcluster | awk '{print $1}')
         pgport=$(echo $nxcluster | awk '{print $3}')
         pgstatus=$(echo $nxcluster | awk '{print $4}')
@@ -50,8 +52,8 @@ cleanup_nuxeo_cluster() {
             pgwasstarted=false
             pg_ctlcluster $pgversion $PGCLUSTER start
         fi
-        su postgres -c "dropdb -p $pgport @package.name.clean@" || true
-        su postgres -c "dropuser -p $pgport @package.name.clean@" || true
+        su postgres -c "psql -p $pgport template1 --quiet -t -c 'DROP DATABASE IF EXISTS @package.name.clean@'"
+        su postgres -c "psql -p $pgport template1 --quiet -t -c 'DROP USER IF EXISTS @package.name.clean@'"
         num=$(su postgres -c "psql -p $pgport template1 --quiet -t -c 'SELECT usename FROM pg_user'" | grep -v -E "^$" | wc -l)
         # No user left beside postgres
         if [ "$num" = "1" ]; then
@@ -94,16 +96,14 @@ case "$1" in
 
         delete_user
 
-        # Purge debconf answers
-        # but check whether we autoconfigured PostgreSQL first
-        db_get @package.name@/database
-        pgdb=$RET
-        db_purge
-
-        # Purge database if we crated it
-        if [ "$pgdb" = "Autoconfigure PostgreSQL" ]; then
+        # Purge database if we created it
+        db_get @package.name@/installedpg
+        if [ "$RET" = "true" ]; then
             cleanup_nuxeo_cluster
         fi
+
+        # Purge debconf answers
+        db_purge
     ;;
 
     remove)

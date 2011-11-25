@@ -31,25 +31,25 @@ case "$1" in
   start)
         log_daemon_msg "Starting $DESC"
         create_pid_dir
-        su $NUXEO_USER -m -c "$NUXEOCTL startbg"
+        su $NUXEO_USER -m -c "$NUXEOCTL --quiet startbg"
         ES=$?
         log_end_msg $ES
         ;;
   stop)
         log_daemon_msg "Stopping $DESC"
-        su $NUXEO_USER -m -c "$NUXEOCTL stop"
+        su $NUXEO_USER -m -c "$NUXEOCTL --quiet stop"
         ES=$?
         log_end_msg $ES
         ;;
   restart)
         create_pid_dir
-        su $NUXEO_USER -m -c "$NUXEOCTL restart"
+        su $NUXEO_USER -m -c "$NUXEOCTL --quiet restart"
         ES=$?
         log_end_msg $ES
         ;;
   force-reload)
         create_pid_dir
-        su $NUXEO_USER -m -c "$NUXEOCTL restart"
+        su $NUXEO_USER -m -c "$NUXEOCTL --quiet restart"
         ES=$?
         log_end_msg $ES
         ;;

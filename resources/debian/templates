@@ -50,8 +50,14 @@ _Description: Listening port for AJP (0=disabled):
 
 Template: @package.name@/database
 Type: select
-__Choices: Autoconfigure PostgreSQL, Custom (configure in wizard)
+__Choices: Autoconfigure PostgreSQL, Configure database in wizard
 Default: Autoconfigure PostgreSQL
 _Description: Backend database:
   Backend database to use.
+
+Template: @package.name@/installedpg
+Type: boolean
+Default: false
+_Description: for internal use
+  Internal use
 

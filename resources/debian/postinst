@@ -28,6 +28,18 @@ configure_paths() {
 
 setup_postgresql() {
 
+    # Return if we already autoconfigured PostgreSQL
+    get_conf_var nuxeo.installer.installedpg
+    if [ "$RET" = "true" ]; then
+        return
+    fi
+
+    # Make a note that we're autoconfiguring PostgreSQL
+    set_conf_var nuxeo.installer.installedpg true
+    db_set @package.name@/installedpg true
+
+    echo "*** Creating a dedicated database for @package.name@ ***"
+
     # Change to /tmp to avoid 'could not change directory to "/root"' messages
     pushd /tmp > /dev/null
 
@@ -180,17 +192,23 @@ configure_nuxeo() {
     set_conf_var nuxeo.server.tomcat-admin.port $adminport
 
     db_get @package.name@/database
-    if [ "$RET" = "$DBEMBEDDED" ]; then
+    dbchoice=$RET
+    if [ "$dbchoice" = "$DBEMBEDDED" ]; then
         set_db_template default
         set_conf_var nuxeo.wizard.skippedpages General
-    elif [ "$RET" = "$DBAUTOPGSQL" ]; then
+    elif [ "$dbchoice" = "$DBAUTOPGSQL" ]; then
         set_db_template postgresql
-        set_conf_var nuxeo.debconf.pgsqldb auto
+        set_conf_var nuxeo.installer.useautopg true
         setup_postgresql
         set_conf_var nuxeo.wizard.skippedpages General,DB
     else
-        del_conf_var nuxeo.debconf.pgsqldb
-        set_conf_var nuxeo.wizard.skippedpages General
+        get_conf_var nuxeo.installer.useautopg
+        previouschoice=$RET
+        set_conf_var nuxeo.installer.useautopg false
+        if [ "$previouschoice" != "false" ]; then
+            set_conf_var nuxeo.wizard.skippedpages General
+            activate_wizard
+        fi
     fi
 
 }
@@ -205,7 +223,6 @@ activate_wizard() {
 # dpkg-reconfigure
 if [ "$1" = "reconfigure" ] || [ "$DEBCONF_RECONFIGURE" ]; then
     configure_paths
-    get_existing_conf
     configure_nuxeo
     db_stop
 # new install (old version not set)
