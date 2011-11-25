@@ -11,7 +11,8 @@
 DESC="Nuxeo"
 
 NUXEO_USER=@package.name.clean@
-NUXEO_CONF=@nuxeo.etc.dir@/nuxeo.conf
+NUXEOCTL="@nuxeo.home.dir@/bin/nuxeoctl"
+NUXEO_CONF="@nuxeo.etc.dir@/nuxeo.conf"
 export NUXEO_CONF
 
 . /lib/init/vars.sh
@@ -30,26 +31,30 @@ case "$1" in
   start)
         log_daemon_msg "Starting $DESC"
         create_pid_dir
-        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl startbg"
+        su $NUXEO_USER -m -c "$NUXEOCTL startbg"
         ES=$?
         log_end_msg $ES
         ;;
   stop)
         log_daemon_msg "Stopping $DESC"
-        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl stop"
+        su $NUXEO_USER -m -c "$NUXEOCTL stop"
         ES=$?
         log_end_msg $ES
         ;;
   restart)
         create_pid_dir
-        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl restart"
+        su $NUXEO_USER -m -c "$NUXEOCTL restart"
+        ES=$?
+        log_end_msg $ES
         ;;
   force-reload)
         create_pid_dir
-        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl restart"
+        su $NUXEO_USER -m -c "$NUXEOCTL restart"
+        ES=$?
+        log_end_msg $ES
         ;;
   status)
-        su $NUXEO_USER -m -c "@nuxeo.home.dir@/bin/nuxeoctl --quiet status"
+        su $NUXEO_USER -m -c "$NUXEOCTL --quiet status"
         exit $?
         ;;
   *)

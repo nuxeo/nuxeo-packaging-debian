@@ -8,22 +8,56 @@ License: LGPL-2.1
 Files: *
 Copyright: 2001-2011 Nuxeo and respective authors
 License: LGPL-2.1
+ On Debian systems, the full text of the GNU General Public License version 2
+ can be found in the file '/usr/share/common-licenses/LGPL-2.1'.
 
 Files: bin/* conf/* doc-tomcat/* lib/* webapps/*
 Copyright: 1999-2009 The Apache Software Foundation
 License: Apache-2.0
+ On Debian systems, the full text of the Apache License version 2.0 can be found
+ in the file '/usr/share/common-licenses/Apache-2.0'.
 
 Files: bin/monitorctl.sh bin/nuxeoctl bin/openofficectl bin/pack
 Copyright: 2001-2011 Nuxeo and respective authors
 License: LGPL-2.1
+ On Debian systems, the full text of the GNU General Public License version 2
+ can be found in the file '/usr/share/common-licenses/LGPL-2.1'.
 
 Files: lib/nuxeo*
 Copyright: 2001-2011 Nuxeo and respective authors
 License: LGPL-2.1
+ On Debian systems, the full text of the GNU General Public License version 2
+ can be found in the file '/usr/share/common-licenses/LGPL-2.1'.
 
 Files: templates/postgresql/lib/postgresql-*.jar
-Copyright: 1997-2010, PostgreSQL Global Development Group
+Copyright: 1997-2011, PostgreSQL Global Development Group
 License: BSD
+ Copyright (c) The Regents of the University of California.
+ All rights reserved.
+ .
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. Neither the name of the University nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ SUCH DAMAGE.
 
 Files: templates/default/lib/h2-*.jar
 Copyright: 2004-2009 H2 Group
@@ -34,11 +68,17 @@ License: EPL 1.0 or H2 1.0
 Files: templates/default/lib/derby-*.jar
 Copyright: 1999-2009 The Apache Software Foundation
 License: Apache-2.0
+ On Debian systems, the full text of the Apache License version 2.0 can be found
+ in the file '/usr/share/common-licenses/Apache-2.0'.
 
 Files: templates/mssql/lib/jtds-*.jar
+Copyright: 2004 The jTDS Project
 License: LGPL-2.1
+ On Debian systems, the full text of the GNU General Public License version 2
+ can be found in the file '/usr/share/common-licenses/LGPL-2.1'.
 
 Files: nxserver/lib/*
+Copyright: Multiple - depends on each individual library
 License: MISC
  Third-party libraries each have their own LGPL-compatible license.
 

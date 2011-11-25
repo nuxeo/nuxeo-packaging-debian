@@ -8,6 +8,8 @@ nxhome=${absnxhome:1}
 
 pushd debian/@package.name@
 
+umask 0022
+
 mkdir -p ${etcdir}
 mv ${nxhome}/bin/nuxeo.conf ${etcdir}/nuxeo.conf
 cat << EOF >> ${etcdir}/nuxeo.conf

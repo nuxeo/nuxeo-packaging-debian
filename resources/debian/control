@@ -2,7 +2,7 @@ Source: @package.name@
 Section: devel
 Priority: optional
 Build-Depends: debhelper (>=5), po-debconf, rsync
-Standards-Version: 3.9.1
+Standards-Version: 3.9.2
 Maintainer: Nuxeo Packagers <packagers@nuxeo.com>
 Homepage: http://www.nuxeo.com/
 
@@ -15,7 +15,7 @@ Recommends: apache2
 #Provides: nuxeo-dm, nuxeo-dam, nuxeo-cmf
 #Conflicts: nuxeo-dm, nuxeo-dam, nuxeo-cmf
 #Replaces: nuxeo-dm, nuxeo-dam, nuxeo-cmf
-Description: Nuxeo is a full-featured document management server and platform
+Description: Full-featured document management server and platform
  Nuxeo is a document management server, designed to help organizations
  better manage their digital content (documents, images, videos, etc.). It
  provides an approachable and cost effective alternative to mainstream

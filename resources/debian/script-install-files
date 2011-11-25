@@ -3,6 +3,8 @@
 absnxhome="@nuxeo.home.dir@"
 nxhome=${absnxhome:1}
 
+umask 0022
+
 mkdir -p debian/@package.name@/${nxhome}
 cp -a distribution/* debian/@package.name@/${nxhome}/
 

@@ -1,11 +1,11 @@
-# /opt seems to be the best place for the application
-@package.name@ binary: dir-or-file-in-opt
-
 # jar versions are very specific to the application, they don't belong in /usr/share
 @package.name@ binary: jar-not-in-usr-share
 
 # some jars can provide configuration, they aren't restricted to code
 @package.name@ binary: codeless-jar
+
+# 3rd-party jars, we don't want to modify them
+@package.name@ binary: classpath-contains-relative-path
 
 # Misc license files will be removed when copyright file is more complete.
 # In the meantime, ignore related lintian warnings
