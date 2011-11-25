@@ -13,7 +13,6 @@ umask 0022
 mkdir -p ${etcdir}
 mv ${nxhome}/bin/nuxeo.conf ${etcdir}/nuxeo.conf
 cat << EOF >> ${etcdir}/nuxeo.conf
-JAVA_HOME=/usr/lib/jvm/java-6-sun
 nuxeo.log.dir=@nuxeo.log.dir@
 nuxeo.pid.dir=@nuxeo.pid.dir@
 nuxeo.data.dir=@nuxeo.data.dir@

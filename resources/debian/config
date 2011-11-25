@@ -37,27 +37,6 @@ if [ -f "$NUXEO_CONF" ]; then
 fi
 
 
-# Only offer embedded database choice if it's already
-# in use
-#DBCHOICES="$DBAUTOPGSQL, $DBCUSTOM"
-#db_get @package.name@/database
-#if [ "$RET" = "default" ]; then
-#    DBCHOICES="$DBEMBEDDED, $DBCHOICES"
-#fi
-#db_subst @package.name@/database dbchoices $DBCHOICES
-#db_get @package.name@/database
-
-# Build custom db "pretty list"
-#CUSTOMDBCHOICES=""
-#for d in ${CUSTOMDB_NAMES[@]}; do
-#    if [ ! -z "$CUSTOMDBCHOICES" ]; then
-#        CUSTOMDBCHOICES+=", "
-#    fi
-#    CUSTOMDBCHOICES+="$d"
-#done
-#db_subst @package.name@/customdb customdbchoices $CUSTOMDBCHOICES
-
-
 STATE=1
 STATE_EXIT=5
 
@@ -131,20 +110,6 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
         db_input high @package.name@/database || true
     ;;
 
-    5)
-        db_input high @package.name@/customdb || true
-    ;;
-
-    6)
-        db_beginblock
-        db_input high @package.name@/dbhost || true
-        db_input high @package.name@/dbport || true
-        db_input high @package.name@/dbname || true
-        db_input high @package.name@/dbuser || true
-        db_input high @package.name@/dbpass || true
-        db_endblock
-    ;;
-
     esac
 
     if db_go; then
@@ -210,16 +175,6 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
                 STATE=$(($STATE-1))
             fi
 
-        fi
-
-        # If the user selects a "custom" db, ask for more parameters
-        if [ "$STATE" = "4" ]; then
-            db_get @package.name@/database
-            if [ "$RET" = "$DBCUSTOM" ]; then
-                STATE_EXIT=7
-            else
-                STATE_EXIT=5
-            fi
         fi
 
         STATE=$(($STATE+1))

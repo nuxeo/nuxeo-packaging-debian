@@ -26,19 +26,6 @@ configure_paths() {
 }
 
 
-random_password() {
-
-    l=0
-    while [ $l -lt 8 ]; do
-        read -n 1000 urandom < /dev/urandom
-        rndanum=$(echo $urandom | tr -cd "a-zA-Z0-9")
-        l=${#rndanum}
-    done
-    RET=$(echo $rndanum | head -c 8)
-
-}
-
-
 setup_postgresql() {
 
     # Change to /tmp to avoid 'could not change directory to "/root"' messages
@@ -96,12 +83,7 @@ setup_postgresql() {
 
     # Get cluster info to connect to the database
     pgport=$(pg_lsclusters -h | grep $PGCLUSTER | awk '{print $3}')
-    db_get @package.name@/dbpass
-    pgpass=$RET
-    if [ -z "$pgpass" ]; then
-        random_password
-        pgpass=$RET
-    fi
+    pgpass=$(pwgen -c1)
 
     # Create user,language and functions if missing
     su postgres -c "psql -p $pgport template1 --quiet -t -f-" << EOF > /dev/null
@@ -200,38 +182,15 @@ configure_nuxeo() {
     db_get @package.name@/database
     if [ "$RET" = "$DBEMBEDDED" ]; then
         set_db_template default
+        set_conf_var nuxeo.wizard.skippedpages General
     elif [ "$RET" = "$DBAUTOPGSQL" ]; then
         set_db_template postgresql
         set_conf_var nuxeo.debconf.pgsqldb auto
         setup_postgresql
+        set_conf_var nuxeo.wizard.skippedpages General,DB
     else
-        db_get @package.name@/customdb
-        for ((i=0; i<${#CUSTOMDB_NAMES[@]}; i++)); do
-            if [ "${CUSTOMDB_NAMES[$i]}" = "$RET" ]; then
-                set_db_template ${CUSTOMDB_LIST[$i]}
-                if [ "${CUSTOMDB_NAMES[$i]}" = "PostgreSQL" ]; then
-                    set_conf_var nuxeo.debconf.pgsqldb custom
-                fi
-            fi
-        done
-        db_get @package.name@/dbhost
-        set_conf_var nuxeo.db.host $RET
-        db_get @package.name@/dbport
-        set_conf_var nuxeo.db.port $RET
-        db_get @package.name@/dbname
-        set_conf_var nuxeo.db.name $RET
-        db_get @package.name@/dbuser
-        set_conf_var nuxeo.db.user $RET
-        db_get @package.name@/dbpass
-        set_conf_var nuxeo.db.password $RET
-    fi
-
-    # Fix openoffice path
-    if [ ! -d /opt/openoffice.org3 ]; then
-        get_conf_var jod.office.home
-        if [ -z "$RET" ] && [ -d /usr/lib/openoffice ]; then
-            set_conf_var jod.office.home /usr/lib/openoffice
-        fi
+        del_conf_var nuxeo.debconf.pgsqldb
+        set_conf_var nuxeo.wizard.skippedpages General
     fi
 
 }

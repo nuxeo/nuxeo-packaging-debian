@@ -50,37 +50,8 @@ _Description: Listening port for AJP (0=disabled):
 
 Template: @package.name@/database
 Type: select
-__Choices: Autoconfigure PostgreSQL, User-configured database
+__Choices: Autoconfigure PostgreSQL, Custom (configure in wizard)
 Default: Autoconfigure PostgreSQL
 _Description: Backend database:
   Backend database to use.
-
-Template: @package.name@/customdb
-Type: select
-__Choices: PostgreSQL, Oracle, MSSQL, MySQL
-Default: PostgreSQL
-_Description: User-configured database engine:
-  Backend database engine you want to connect to.
-  Please check the following for database requirements:
-  http://doc.nuxeo.com/display/NXDOC/Configuring+Nuxeo+EP
-
-Template: @package.name@/dbhost
-Type: string
-_Description: Database host:
-
-Template: @package.name@/dbport
-Type: string
-_Description: Database port:
-
-Template: @package.name@/dbname
-Type: string
-_Description: Database name:
-
-Template: @package.name@/dbuser
-Type: string
-_Description: Database username:
-
-Template: @package.name@/dbpass
-Type: password
-_Description: Database password:
 

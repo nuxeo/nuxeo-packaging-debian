@@ -4,11 +4,8 @@
 NUXEO_CONF="@nuxeo.etc.dir@/nuxeo.conf"
 DB_LIST=("default" "postgresql" "oracle" "mssql" "mysql")
 
-CUSTOMDB_LIST=("postgresql" "oracle" "mssql" "mysql")
-CUSTOMDB_NAMES=("PostgreSQL" "Oracle" "MSSQL" "MySQL")
-
 DBAUTOPGSQL="Autoconfigure PostgreSQL"
-DBCUSTOM="User-configured database"
+DBCUSTOM="Custom (configure in wizard)"
 
 PGCLUSTER="nuxeodb"
 PGDEFAULTVERSION="8.4"
@@ -96,6 +93,16 @@ set_conf_var() {
 
 }
 
+del_conf_var() {
+
+    key=$1
+    has_key=$(grep -E "^$key=" $NUXEO_CONF | wc -l)
+    if [ "$has_key" != 0 ]; then
+        perl -p -i -e "s:^$key=:#$key=:g" $NUXEO_CONF
+    fi
+
+}
+
 get_templates_list() {
 
     RET=$(grep -E "^#?nuxeo.templates=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr "," " ")
@@ -168,53 +175,8 @@ get_existing_conf() {
             db_set @package.name@/database $DBAUTOPGSQL
         elif [ "$DB" = "postgresql" -a "$AUTOPG" = "auto" ]; then
             db_set @package.name@/database $DBAUTOPGSQL
-            get_conf_var nuxeo.db.host
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbhost $RET
-            fi
-            get_conf_var nuxeo.db.port
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbport $RET
-            fi
-            get_conf_var nuxeo.db.name
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbname $RET
-            fi
-            get_conf_var nuxeo.db.user
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbuser $RET
-            fi
-            get_conf_var nuxeo.db.password
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbpass $RET
-            fi
         else
             db_set @package.name@/database $DBCUSTOM
-            for ((i=0; i<${#CUSTOMDB_LIST[@]}; i++)); do
-                if [ "${CUSTOMDB_LIST[$i]}" = "$DB" ]; then
-                    db_set @package.name@/customdb ${CUSTOMDB_NAMES[$i]}
-                fi
-            done
-            get_conf_var nuxeo.db.host
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbhost $RET
-            fi
-            get_conf_var nuxeo.db.port
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbport $RET
-            fi
-            get_conf_var nuxeo.db.name
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbname $RET
-            fi
-            get_conf_var nuxeo.db.user
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbuser $RET
-            fi
-            get_conf_var nuxeo.db.password
-            if [ ! -z "$RET" ]; then
-                db_set @package.name@/dbpass $RET
-            fi
         fi
 
 

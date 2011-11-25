@@ -135,8 +135,8 @@ msgstr "Configurer PostgreSQL automatiquement"
 #. Type: select
 #. Choices
 #: ../templates:9001
-msgid "User-configured database"
-msgstr "Utiliser une base configurée par l'utilisateur"
+msgid "Custom (configure in wizard)"
+msgstr "Base personalisée (configurer dans le wizard)"
 
 #. Type: select
 #. Description
@@ -150,74 +150,3 @@ msgstr "Base de données:"
 msgid " Backend database to use."
 msgstr " Base de données à utiliser."
 
-#. Type: select
-#. Choices
-#: ../templates:10001
-msgid "PostgreSQL"
-msgstr "PostgreSQL"
-
-#. Type: select
-#. Choices
-#: ../templates:10001
-msgid "Oracle"
-msgstr "Oracle"
-
-#. Type: select
-#. Choices
-#: ../templates:10001
-msgid "MSSQL"
-msgstr "MSSQL"
-
-#. Type: select
-#. Choices
-#: ../templates:10001
-msgid "MySQL"
-msgstr "MySQL"
-
-#. Type: select
-#. Description
-#: ../templates:10002
-msgid "User-configured database engine:"
-msgstr "Base de données configurée par l'utilisateur"
-
-#. Type: select
-#. Description
-#: ../templates:10002
-msgid ""
-" Backend database engine you want to connect to.\n"
-" Please check the following for database requirements:\n"
-" http://doc.nuxeo.com/display/NXDOC/Configuring+Nuxeo+EP"
-msgstr ""
-" Le moteur de base de données que vous voulez utiliser.\n"
-" Vérifier l'adresse suivante pour les pré-requis:\n"
-" http://doc.nuxeo.com/display/NXDOC/Configuring+Nuxeo+EP"
-
-#. Type: string
-#. Description
-#: ../templates:11001
-msgid "Database host:"
-msgstr "Hôte de la base de données"
-
-#. Type: string
-#. Description
-#: ../templates:12001
-msgid "Database port:"
-msgstr "Port de la base de données"
-
-#. Type: string
-#. Description
-#: ../templates:13001
-msgid "Database name:"
-msgstr "Nom de la base de données"
-
-#. Type: string
-#. Description
-#: ../templates:14001
-msgid "Database username:"
-msgstr "Nom d'utilisateur pour la base de données"
-
-#. Type: password
-#. Description
-#: ../templates:15001
-msgid "Database password:"
-msgstr "Mot de passe pour la base de données"
