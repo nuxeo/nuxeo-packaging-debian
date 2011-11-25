@@ -30,12 +30,25 @@
                 <version>1.11-SNAPSHOT</version>
                 <executions>
                     <execution>
+                        <id>package</id>
                         <phase>package</phase>
                         <goals>
                             <goal>build</goal>
                         </goals>
                         <configuration>
                             <buildFile>${basedir}/debian.xml</buildFile>
+                            <target>package</target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <buildFile>${basedir}/debian.xml</buildFile>
+                            <target>deploy</target>
                         </configuration>
                     </execution>
                 </executions>

@@ -10,6 +10,12 @@
     <property name="out.dir" value="${maven.project.build.directory}" />
     <property name="resources.dir" value="${out.dir}/resources" />
 
+    <!-- remote host settings -->
+    <property name="apt.host" value="apt.nuxeo.org" />
+    <property name="apt.user" value="nuxeo" />
+    <property name="apt.pool" value="/var/www/apt.nuxeo.org/pool" />
+    <property name="apt.keyfile" value="${user.home}/.ssh/id_rsa" />
+    <property name="apt.passphrase" value="" />
 
     <!-- Get variables from environment if set, use defaults otherwise -->
     <target name="init-from-env">
@@ -69,7 +75,7 @@
                     <isset property="package.snapshot.version" />
                     <then>
                         <property name="package.version" value="${package.snapshot.version}" />
-                        <property name="package.type" value="snapshot" />
+                        <property name="package.type" value="snapshots" />
                     </then>
                 </if>
             </then>
@@ -119,7 +125,7 @@
             </not>
             <then>
                 <property name="package.version" value="${distribution.version}" />
-                <property name="package.type" value="release" />
+                <property name="package.type" value="releases" />
             </then>
         </if>
         <!-- Versions in debian parlance -->
@@ -307,9 +313,42 @@
 
     </target>
 
-
-    <!-- Main target -->
+    <!--Packaging target -->
     <target name="package" depends="lintian">
+    </target>
+
+    <!-- deployment target -->
+    <!-- Note: For snapshots, this will fail if package happends before
+               midnight but deploy happens after midnight.
+               This is due to the build stampd being recalculated between executions.
+    -->
+    <target name="deploy" depends="init">
+
+        <!-- use exec tasks for scp/ssh as the ant tasks tends to hang -->
+
+        <echo message="*** Uploading binary package to apt pool ***" />
+        <exec dir="${out.dir}/packages/${package.type}"
+              executable="scp"
+              failonerror="true">
+            <arg value="${package.name}_${debian.version}-${debian.revision}_all.deb" />
+            <arg value="${apt.user}@${apt.host}:${apt.pool}/${package.type}/" />
+        </exec>
+
+        <echo message="*** Uploading repository update script to apt host ***" />
+        <exec dir="${maven.basedir}/bin"
+              executable="scp"
+              failonerror="true">
+            <arg value="update_debian_repository" />
+            <arg value="${apt.user}@${apt.host}:bin/" />
+        </exec>
+
+        <echo message="*** Updating apt repository on apt host ***" />
+        <exec executable="ssh"
+              failonerror="true">
+            <arg value="${apt.user}@${apt.host}" />
+            <arg value="bin/update_debian_repository" />
+        </exec>
+
     </target>
 
 </project>
