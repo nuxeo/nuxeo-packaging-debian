@@ -1,0 +1,46 @@
+#!/bin/bash
+
+BASE="/opt/www/apt.nuxeo.org"
+DISTS="lenny squeeze lucid maverick natty oneiric"
+
+cd $BASE
+
+
+# Build indexes
+for i in releases snapshots datebased; do
+  dpkg-scanpackages pool/$i /dev/null > /tmp/Packages
+  dpkg-scansources pool/$i /dev/null > /tmp/Sources
+  gzip -9c /tmp/Packages > /tmp/Packages.gz
+  gzip -9c /tmp/Sources > /tmp/Sources.gz
+  bzip2 -c9 /tmp/Packages > /tmp/Packages.bz2
+  bzip2 -c9 /tmp/Sources > /tmp/Sources.bz2
+  for j in $DISTS; do
+    for k in binary-i386 binary-amd64; do
+      mkdir -p dists/$j/$i/$k
+      cp /tmp/Packages dists/$j/$i/$k/Packages
+      cp /tmp/Packages.gz dists/$j/$i/$k/Packages.gz
+      cp /tmp/Packages.bz2 dists/$j/$i/$k/Packages.bz2
+    done
+    for k in source; do
+      mkdir -p dists/$j/$i/$k
+      cp /tmp/Sources dists/$j/$i/$k/Sources
+      cp /tmp/Sources.gz dists/$j/$i/$k/Sources.gz
+      cp /tmp/Sources.bz2 dists/$j/$i/$k/Sources.bz2
+    done
+  done
+  rm /tmp/Packages
+  rm /tmp/Sources
+  rm /tmp/Packages.gz
+  rm /tmp/Sources.gz
+  rm /tmp/Packages.bz2
+  rm /tmp/Sources.bz2
+done
+
+for d in $DISTS; do
+  apt-ftparchive -o"APT::FTPArchive::Release::Codename=$d" release dists/$d > /tmp/Release
+  rm -f /tmp/Release.gpg
+  gpg --no-tty -abs -u DD1BF5E4 --passphrase-file /opt/nuxeo/.gpgpass -o /tmp/Release.gpg /tmp/Release || echo "Signing failed"
+  mv /tmp/Release dists/$d/Release
+  mv /tmp/Release.gpg dists/$d/Release.gpg
+done
+
