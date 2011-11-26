@@ -251,7 +251,8 @@
 
         <echo message="*** Build source package ***" />
         <exec dir="${out.dir}/${package.name}-${debian.version}"
-              executable="dpkg-buildpackage">
+              executable="dpkg-buildpackage"
+              failonerror="true">
             <arg value="-rfakeroot" />
             <arg value="-pgpgsign" />
             <arg value="-sgpg" />
@@ -267,7 +268,8 @@
 
         <echo message="*** Build binary package ***" />
         <exec dir="${out.dir}/${package.name}-${debian.version}"
-              executable="dpkg-buildpackage">
+              executable="dpkg-buildpackage"
+              failonerror="true">
             <arg value="-rfakeroot" />
             <arg value="-A" />
             <arg value="-uc" />
@@ -299,14 +301,16 @@
 
         <echo message="*** Running lintian on the source package ***" />
         <exec dir="${out.dir}/packages/src"
-              executable="lintian">
+              executable="lintian"
+              failonerror="true">
             <arg value="-cEI" />
             <arg value="${package.name}_${debian.version}-${debian.revision}.dsc" />
         </exec>
 
         <echo message="*** Running lintian on the binary package ***" />
         <exec dir="${out.dir}/packages/${package.type}"
-              executable="lintian">
+              executable="lintian"
+              failonerror="true">
             <arg value="-cEI" />
             <arg value="${package.name}_${debian.version}-${debian.revision}_all.deb" />
         </exec>
