@@ -322,7 +322,7 @@
     </target>
 
     <!-- deployment target -->
-    <!-- Note: For snapshots, this will fail if package happends before
+    <!-- Note: For snapshots, this will fail if package happens before
                midnight but deploy happens after midnight.
                This is due to the build stampd being recalculated between executions.
     -->
