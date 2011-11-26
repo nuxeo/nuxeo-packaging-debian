@@ -324,7 +324,7 @@
     <!-- deployment target -->
     <!-- Note: For snapshots, this will fail if package happens before
                midnight but deploy happens after midnight.
-               This is due to the build stampd being recalculated between executions.
+               This is due to the build stamp being recalculated between executions.
     -->
     <target name="deploy" depends="init">
 
