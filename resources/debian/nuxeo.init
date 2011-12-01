@@ -29,14 +29,14 @@ ulimit -n 2048
 
 case "$1" in
   start)
-        log_daemon_msg "Starting $DESC"
+        log_daemon_msg "Starting" "$DESC\n"
         create_pid_dir
         su $NUXEO_USER -m -c "$NUXEOCTL --quiet startbg"
         ES=$?
         log_end_msg $ES
         ;;
   stop)
-        log_daemon_msg "Stopping $DESC"
+        log_daemon_msg "Stopping" "$DESC\n"
         su $NUXEO_USER -m -c "$NUXEOCTL --quiet stop"
         ES=$?
         log_end_msg $ES

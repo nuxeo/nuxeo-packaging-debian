@@ -45,6 +45,19 @@ remove_old_bundles() {
 
 }
 
+remove_old_webapp() {
+
+    # Delete old unpacked wizard webapp
+    if [ -d @nuxeo.home.dir@/webapps/nuxeo ]; then
+        rm -rf @nuxeo.home.dir@/webapps/nuxeo
+    fi
+
+    # Delete old nuxeo work directory
+    if [ -d @nuxeo.home.dir@/work/Catalina/localhost/nuxeo ]; then
+        rm -rf @nuxeo.home.dir@/work/Catalina/localhost/nuxeo
+    fi
+
+}
 
 case "$1" in
 
@@ -58,6 +71,7 @@ case "$1" in
     upgrade)
         remove_old_templates
         remove_old_bundles
+        remove_old_webapp
     ;;
 
     abort-upgrade)
