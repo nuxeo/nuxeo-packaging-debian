@@ -31,18 +31,6 @@ remove_old_bundles() {
         rm -rf "@nxserver.bundle.dir@"
     fi
 
-    # Set marketplace packages status to uninstalled
-    get_conf_var nuxeo.data.dir
-    if [ -n "$RET" ]; then
-        datadir=$RET
-    else
-        datadir=@nuxeo.data.dir@
-    fi
-    pkgfile="$datadir/packages/.packages"
-    if [ -f "$pkgfile" ]; then
-        perl -p -i -e "s/([^=]+)=[^01]+/\\1=2\n/" $pkgfile
-    fi
-
 }
 
 remove_old_webapp() {

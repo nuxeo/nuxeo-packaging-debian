@@ -219,6 +219,46 @@ activate_wizard() {
 
 }
 
+upgrade_marketplace_packages() {
+
+    export NUXEO_CONF
+
+    MPDISTLIST="nuxeo-content-browser nuxeo-content-browser-cmf nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-social-collab"
+    # Record package states
+    MPLIST=$(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list | grep -E "^(started|downloaded)" | awk '{print $2}')
+    declare -A MPSTATES
+    declare -A MPIDS
+    for pkg in $MPLIST; do
+        state=$(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list | grep "[[:space:]]$pkg[[:space:]]" | awk '{print $1}')
+        id=$(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list | grep "[[:space:]]$pkg[[:space:]]" | awk '{print gensub(/^.*\(id: (.*)\)$/,"\\1","g")}')
+        MPSTATES[$pkg]=$state
+        MPIDS[$pkg]=$id
+    done
+    # Reset to "downloaded"
+    @nuxeo.home.dir@/bin/nuxeoctl --quiet mp-reset
+    # Remove marketplace packages from distribution
+    for distPkg in $MPDISTLIST; do
+        MPREVLIST="$distPkg $MPREVLIST"
+    done
+    for distPkg in $MPREVLIST; do
+        if [ -n "${MPSTATES[$distPkg]}" ]; then
+            echo "Should remove $distPkg"
+            #@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-remove ${MPIDS[distPkg]}
+        fi
+    done
+    # Install new versions in the same state
+    for distPkg in $MPDISTLIST; do
+        if [ "${MPSTATES[$distPkg]}" = "started" ]; then
+            echo "Should install $distPkg"
+        fi
+        if [ "${MPSTATES[$distPkg]}" = "downloaded" ]; then
+            echo "Should add $distPkg"
+        fi
+    done
+
+    export -n NUXEO_CONF
+
+}
 
 # dpkg-reconfigure
 if [ "$1" = "reconfigure" ] || [ "$DEBCONF_RECONFIGURE" ]; then
@@ -238,6 +278,7 @@ elif [ "$1" = "configure" ]; then
     configure_paths
     get_existing_conf
     configure_nuxeo
+    upgrade_marketplace_packages
     db_stop
 # other
 elif [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-remove" ] || [ "$1" = "abort-deconfigure" ]; then
