@@ -94,7 +94,11 @@ case "$1" in
         rm -rf @nuxeo.log.dir@
         rm -rf @nuxeo.pid.dir@
 
-        delete_user
+        # Remove the user if we created it
+        db_get @package.name@/installeduser
+        if [ "$RET" = "true" ]; then
+            delete_user
+        fi
 
         # Purge database if we created it
         db_get @package.name@/installedpg

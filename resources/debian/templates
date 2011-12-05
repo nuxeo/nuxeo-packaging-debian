@@ -61,3 +61,9 @@ Default: false
 _Description: for internal use
   Internal use
 
+Template: @package.name@/installeduser
+Type: boolean
+Default: false
+_Description: for internal use
+  Internal use
+

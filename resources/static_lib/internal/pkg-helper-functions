@@ -18,6 +18,9 @@ create_user() {
                 --no-create-home \
                 --group --shell /bin/bash @package.name.clean@
         echo "ok."
+        # Make a note that we've created the user
+        set_conf_var nuxeo.installer.installeduser true
+        db_set @package.name@/installeduser true
     fi
 }
 
