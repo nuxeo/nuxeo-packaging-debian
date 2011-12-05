@@ -223,20 +223,25 @@ upgrade_marketplace_packages() {
 
     export NUXEO_CONF
 
-    MPDISTLIST="nuxeo-content-browser nuxeo-content-browser-cmf nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-social-collab"
     # Record package states
     MPLIST=$(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list | grep -E "^(started|downloaded)" | awk '{print $2}')
     declare -A MPSTATES
     declare -A MPIDS
-    for pkg in $MPLIST; do
-        state=$(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list | grep "[[:space:]]$pkg[[:space:]]" | awk '{print $1}')
-        id=$(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list | grep "[[:space:]]$pkg[[:space:]]" | awk '{print gensub(/^.*\(id: (.*)\)$/,"\\1","g")}')
-        MPSTATES[$pkg]=$state
-        MPIDS[$pkg]=$id
-    done
+    mpregex='(started|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
+    while read -r line; do
+        if [[ $line =~ $mpregex ]]; then
+            MPSTATES[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
+            MPIDS[${BASH_REMATCH[2]}]=${BASH_REMATCH[3]}
+        fi
+    done << EOF
+       $(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list)
+EOF
+
     # Reset to "downloaded"
     @nuxeo.home.dir@/bin/nuxeoctl --quiet mp-reset
+
     # Remove marketplace packages from distribution
+    MPDISTLIST="nuxeo-content-browser nuxeo-content-browser-cmf nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-sc"
     for distPkg in $MPDISTLIST; do
         MPREVLIST="$distPkg $MPREVLIST"
     done
