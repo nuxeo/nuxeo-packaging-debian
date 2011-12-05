@@ -219,12 +219,19 @@ activate_wizard() {
 
 }
 
+quietnuxeoctl() {
+
+    @nuxeo.home.dir@/bin/nuxeoctl --quiet $@ | grep -v "^Nuxeo home:" | grep -v "Nuxeo configuration:"
+
+}
+
 upgrade_marketplace_packages() {
+
+    NEW_DEB_VERSION=$1
 
     export NUXEO_CONF
 
     # Record package states
-    MPLIST=$(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list | grep -E "^(started|downloaded)" | awk '{print $2}')
     declare -A MPSTATES
     declare -A MPIDS
     mpregex='(started|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
@@ -238,30 +245,78 @@ upgrade_marketplace_packages() {
 EOF
 
     # Reset to "downloaded"
-    @nuxeo.home.dir@/bin/nuxeoctl --quiet mp-reset
+    quietnuxeoctl mp-reset
 
-    # Remove marketplace packages from distribution
+    # Remove marketplace base pakcages
     MPDISTLIST="nuxeo-content-browser nuxeo-content-browser-cmf nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-sc"
     for distPkg in $MPDISTLIST; do
         MPREVLIST="$distPkg $MPREVLIST"
     done
+    echo "*** Removing old base marketplace packages ***"
     for distPkg in $MPREVLIST; do
         if [ -n "${MPSTATES[$distPkg]}" ]; then
-            echo "Should remove $distPkg"
-            #@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-remove ${MPIDS[distPkg]}
-        fi
-    done
-    # Install new versions in the same state
-    for distPkg in $MPDISTLIST; do
-        if [ "${MPSTATES[$distPkg]}" = "started" ]; then
-            echo "Should install $distPkg"
-        fi
-        if [ "${MPSTATES[$distPkg]}" = "downloaded" ]; then
-            echo "Should add $distPkg"
+            quietnuxeoctl mp-remove ${MPIDS[$distPkg]}
         fi
     done
 
+    # Install new versions of the base marketplace packages in the same state as the old one
+    echo "*** Updating base marketplace packages ***"
+    WIZPKGDIR="@nuxeo.home.dir@/setupWizardDownloads"
+    for distPkg in $MPDISTLIST; do
+        MD5=$(cat $WIZPKGDIR/packages.xml | awk "/id=\"$distPkg\"/,/\/>/" | grep -oE 'md5="([^"]*)"' | sed -E 's/md5="(.*)"/\1/') || MD5=""
+        if [ -f "$WIZPKGDIR/$MD5" ]; then
+            if [ "${MPSTATES[$distPkg]}" = "started" ]; then
+                quietnuxeoctl mp-install $WIZPKGDIR/$MD5
+            fi
+            if [ "${MPSTATES[$distPkg]}" = "downloaded" ]; then
+                echo "Adding (but not activating) $distPkg :"
+                quietnuxeoctl mp-add $WIZPKGDIR/$MD5
+            fi
+        else
+            if [ "${MPSTATES[$distPkg]}" = "started" ] || [ "${MPSTATES[$distPkg]}" = "downloaded" ]; then
+                echo "[ERROR] Missing local package for $distPkg - functionality will not be available"
+            fi
+        fi
+    done
+
+    # If we're still on the same nuxeo version, reactivate other connect packages
+    get_conf_var nuxeo.installer.lastinstalledversion
+    OLD_DEB_VERSION=$RET
+    NEW_NX_VERSION=$(echo $NEW_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
+    OLD_NX_VERSION=$(echo $OLD_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
+    dpkg --compare-versions $OLD_NX_VERSION eq $NEW_NX_VERSION
+    SAME_NX_VERSION=$?
+    if [ "$SAME_NX_VERSION" = "0" ]; then
+        echo "*** Reactivating connect packages (same Nuxeo version) ***"
+        for pkg in ${!MPIDS[@]}; do
+            if [ "${MPSTATES[$pkg]}" != "started" ]; then
+                continue
+            fi
+            IS_DIST_PACKAGE=false
+            for distPkg in $MPDISTLIST; do
+                if [ "$pkg" = "$distPkg" ]; then
+                    # Base marketplace packages are already handled
+                    IS_DIST_PACKAGE=true
+                fi
+            done
+            if [ "$IS_DIST_PACKAGE" = "false" ]; then
+                echo "Trying to reactivate $pkg"
+                TRIED_TO_DO_SOMETHING=true
+                quietnuxeoctl mp-install ${MPIDS[$pkg]}
+            fi
+        done
+        if [ "$TRIED_TO_DO_SOMETHING" != "true" ]; then
+            echo "Nothing to do."
+        fi
+    fi
+
     export -n NUXEO_CONF
+
+}
+
+set_last_installed_version() {
+
+    set_conf_var nuxeo.installer.lastinstalledversion @package.fullversion@
 
 }
 
@@ -276,6 +331,7 @@ elif [ "$1" = "configure" ] && [ -z "$2" ]; then
     configure_paths
     configure_nuxeo
     activate_wizard
+    set_last_installed_version
     db_stop
 # upgrade (old version set)
 elif [ "$1" = "configure" ]; then
@@ -283,7 +339,8 @@ elif [ "$1" = "configure" ]; then
     configure_paths
     get_existing_conf
     configure_nuxeo
-    upgrade_marketplace_packages
+    upgrade_marketplace_packages $2
+    set_last_installed_version
     db_stop
 # other
 elif [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-remove" ] || [ "$1" = "abort-deconfigure" ]; then
