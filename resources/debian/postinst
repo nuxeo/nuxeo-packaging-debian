@@ -221,7 +221,10 @@ activate_wizard() {
 
 quietnuxeoctl() {
 
-    @nuxeo.home.dir@/bin/nuxeoctl --quiet $@ | grep -v "^Nuxeo home:" | grep -v "Nuxeo configuration:"
+    NXCTLPARAMS=$@
+    export NUXEO_CONF
+    su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl --quiet $NXCTLPARAMS" | grep -v "^Nuxeo home:" | grep -v "Nuxeo configuration:" | grep -v -e "Template .* not found"
+    export -n NUXEO_CONF
 
 }
 
@@ -229,25 +232,23 @@ upgrade_marketplace_packages() {
 
     NEW_DEB_VERSION=$1
 
-    export NUXEO_CONF
-
-    # Record package states
+    # Lookup saved package states
     declare -A MPSTATES
     declare -A MPIDS
-    mpregex='(started|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
-    while read -r line; do
-        if [[ $line =~ $mpregex ]]; then
-            MPSTATES[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
-            MPIDS[${BASH_REMATCH[2]}]=${BASH_REMATCH[3]}
-        fi
-    done << EOF
-       $(@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list)
-EOF
+    if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
+        mpregex='(started|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
+        while read -r line; do
+            if [[ $line =~ $mpregex ]]; then
+                MPSTATES[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
+                MPIDS[${BASH_REMATCH[2]}]=${BASH_REMATCH[3]}
+            fi
+        done < @nuxeo.etc.dir@/pkglist.cache
+    fi
 
     # Reset to "downloaded"
     quietnuxeoctl mp-reset
 
-    # Remove marketplace base pakcages
+    # Remove marketplace base packages
     MPDISTLIST="nuxeo-content-browser nuxeo-content-browser-cmf nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-sc"
     for distPkg in $MPDISTLIST; do
         MPREVLIST="$distPkg $MPREVLIST"
@@ -320,8 +321,6 @@ EOF
             echo "Nothing to do."
         fi
     fi
-
-    export -n NUXEO_CONF
 
 }
 

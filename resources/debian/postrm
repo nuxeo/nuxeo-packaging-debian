@@ -89,10 +89,13 @@ case "$1" in
         # Make sure all the files are removed
         rm -rf @nuxeo.home.dir@
         rm -rf @nuxeo.data.dir@
-        # Don't remove @nuxeo.etc.dir@ as there may be custom user templates there
-        #rm -rf @nuxeo.etc.dir@
         rm -rf @nuxeo.log.dir@
         rm -rf @nuxeo.pid.dir@
+        # Don't remove @nuxeo.etc.dir@ as there may be custom user templates there
+        # But remove the marketplace packages list cache
+        if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
+            rm -f "@nuxeo.etc.dir@/pkglist.cache"
+        fi
 
         # Remove the user if we created it
         db_get @package.name@/installeduser

@@ -16,33 +16,10 @@ get_conf_var() {
 
 }
 
-remove_old_templates() {
+remove_old_nxhome() {
 
-    if [ -d @nxserver.config.dir@ ]; then
-        mv @nxserver.config.dir@ @nxserver.config.dir@.`date +"%Y%m%d_%H%M%S"`
-    fi
-
-}
-
-remove_old_bundles() {
-
-    # Delete everything from bundles
-    if [ -d @nxserver.bundle.dir@ ]; then
-        rm -rf "@nxserver.bundle.dir@"
-    fi
-
-}
-
-remove_old_webapp() {
-
-    # Delete old unpacked wizard webapp
-    if [ -d @nuxeo.home.dir@/webapps/nuxeo ]; then
-        rm -rf @nuxeo.home.dir@/webapps/nuxeo
-    fi
-
-    # Delete old nuxeo work directory
-    if [ -d @nuxeo.home.dir@/work/Catalina/localhost/nuxeo ]; then
-        rm -rf @nuxeo.home.dir@/work/Catalina/localhost/nuxeo
+    if [ -d @nuxeo.home.dir@ ]; then
+        rm -rf "@nuxeo.home.dir@"
     fi
 
 }
@@ -57,9 +34,7 @@ case "$1" in
     ;;
 
     upgrade)
-        remove_old_templates
-        remove_old_bundles
-        remove_old_webapp
+        remove_old_nxhome
     ;;
 
     abort-upgrade)
