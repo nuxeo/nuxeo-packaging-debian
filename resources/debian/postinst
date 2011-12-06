@@ -262,11 +262,17 @@ EOF
     # Install new versions of the base marketplace packages in the same state as the old one
     echo "*** Updating base marketplace packages ***"
     WIZPKGDIR="@nuxeo.home.dir@/setupWizardDownloads"
+    MPSELECTION=""
     for distPkg in $MPDISTLIST; do
         MD5=$(cat $WIZPKGDIR/packages.xml | awk "/id=\"$distPkg\"/,/\/>/" | grep -oE 'md5="([^"]*)"' | sed -E 's/md5="(.*)"/\1/') || MD5=""
         if [ -f "$WIZPKGDIR/$MD5" ]; then
             if [ "${MPSTATES[$distPkg]}" = "started" ]; then
                 quietnuxeoctl mp-install $WIZPKGDIR/$MD5
+                if [ -n "$MPSELECTION" ]; then
+                    MPSELECTION="$MPSELECTION,$distPkg"
+                else
+                    MPSELECTION="packages=$distPkg"
+                fi
             fi
             if [ "${MPSTATES[$distPkg]}" = "downloaded" ]; then
                 echo "Adding (but not activating) $distPkg :"
@@ -278,6 +284,11 @@ EOF
             fi
         fi
     done
+    # Save current selection as wizard preselects
+    SELECTIONFILE="$WIZPKGDIR/packages-default-selection.properties"
+    echo "#Updated by Nuxeo debian postinst script" > $SELECTIONFILE
+    echo "#$(date)" >> $SELECTIONFILE
+    echo "$MPSELECTION" >> $SELECTIONFILE
 
     # If we're still on the same nuxeo version, reactivate other connect packages
     get_conf_var nuxeo.installer.lastinstalledversion
