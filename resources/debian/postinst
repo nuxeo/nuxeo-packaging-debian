@@ -254,21 +254,28 @@ upgrade_marketplace_packages() {
         MPREVLIST="$distPkg $MPREVLIST"
     done
     echo "*** Removing old base marketplace packages ***"
+    PKGTOREMOVE=""
     for distPkg in $MPREVLIST; do
         if [ -n "${MPSTATES[$distPkg]}" ]; then
-            quietnuxeoctl mp-remove ${MPIDS[$distPkg]}
+            PKGTOREMOVE="$PKGTOREMOVE ${MPIDS[$distPkg]}"
         fi
     done
+    if [ -n "$PKGTOREMOVE" ]; then
+        quietnuxeoctl mp-remove $PKGTOREMOVE
+    fi
 
     # Install new versions of the base marketplace packages in the same state as the old one
     echo "*** Updating base marketplace packages ***"
     WIZPKGDIR="@nuxeo.home.dir@/setupWizardDownloads"
     MPSELECTION=""
+    PKGTOADD=""
+    NAMESTOADD=""
+    PKGTOINSTALL=""
     for distPkg in $MPDISTLIST; do
         MD5=$(cat $WIZPKGDIR/packages.xml | awk "/id=\"$distPkg\"/,/\/>/" | grep -oE 'md5="([^"]*)"' | sed -E 's/md5="(.*)"/\1/') || MD5=""
         if [ -f "$WIZPKGDIR/$MD5" ]; then
             if [ "${MPSTATES[$distPkg]}" = "started" ]; then
-                quietnuxeoctl mp-install $WIZPKGDIR/$MD5
+                PKGTOINSTALL="$PKGTOINSTALL $WIZPKGDIR/$MD5"
                 if [ -n "$MPSELECTION" ]; then
                     MPSELECTION="$MPSELECTION,$distPkg"
                 else
@@ -276,8 +283,8 @@ upgrade_marketplace_packages() {
                 fi
             fi
             if [ "${MPSTATES[$distPkg]}" = "downloaded" ]; then
-                echo "Adding (but not activating) $distPkg :"
-                quietnuxeoctl mp-add $WIZPKGDIR/$MD5
+                PKGTOADD="$PKGTOADD $WIZPKGDIR/$MD5"
+                NAMESTOADD="$NAMESTOADD $distPkg"
             fi
         else
             if [ "${MPSTATES[$distPkg]}" = "started" ] || [ "${MPSTATES[$distPkg]}" = "downloaded" ]; then
@@ -285,6 +292,14 @@ upgrade_marketplace_packages() {
             fi
         fi
     done
+    if [ -n "$PKGTOADD" ]; then
+        echo "Adding (but not activating) $NAMESTOADD"
+        quietnuxeoctl mp-add $PKGTOADD
+    fi
+    if [ -n "$PKGTOINSTALL" ]; then
+        quietnuxeoctl mp-install $PKGTOINSTALL
+    fi
+
     # Save current selection as wizard preselects
     SELECTIONFILE="$WIZPKGDIR/packages-default-selection.properties"
     echo "#Updated by Nuxeo debian postinst script" > $SELECTIONFILE
@@ -300,6 +315,8 @@ upgrade_marketplace_packages() {
     SAME_NX_VERSION=$?
     if [ "$SAME_NX_VERSION" = "0" ]; then
         echo "*** Reactivating connect packages (same Nuxeo version) ***"
+        PKGTOINSTALL=""
+        NAMESTOINSTALL=""
         for pkg in ${!MPIDS[@]}; do
             if [ "${MPSTATES[$pkg]}" != "started" ]; then
                 continue
@@ -312,12 +329,14 @@ upgrade_marketplace_packages() {
                 fi
             done
             if [ "$IS_DIST_PACKAGE" = "false" ]; then
-                echo "Trying to reactivate $pkg"
-                TRIED_TO_DO_SOMETHING=true
-                quietnuxeoctl mp-install ${MPIDS[$pkg]}
+                PKGTOINSTALL="$PKGTOINSTALL ${MPIDS[$pkg]}"
+                NAMESTOINSTALL="$NAMESTOINSTALL $pkg"
             fi
         done
-        if [ "$TRIED_TO_DO_SOMETHING" != "true" ]; then
+        if [ -n "$PKGTOINSTALL" ]; then
+            echo "Trying to reactivate: $NAMESTOINSTALL"
+            quietnuxeoctl mp-install $PKGTOINSTALL
+        else
             echo "Nothing to do."
         fi
     fi
