@@ -10,7 +10,7 @@ Homepage: http://www.nuxeo.com/
 Package: @package.name@
 Section: web
 Architecture: all
-Depends: debconf, adduser, openjdk-6-jdk|sun-java6-jdk, libreoffice|openoffice.org, openoffice.org-headless|libreoffice, imagemagick(>=7:6.3.7), poppler-utils, ffmpeg, ffmpeg2theora, ufraw, libwpd-tools, postgresql (>=8.3), perl, locales, pwgen, bash (>=4), ${misc:Depends}
+Depends: debconf, adduser, openjdk-7-jdk|openjdk-6-jdk|sun-java6-jdk, libreoffice|openoffice.org, openoffice.org-headless|libreoffice, imagemagick(>=7:6.3.7), poppler-utils, ffmpeg, ffmpeg2theora, ufraw, libwpd-tools, postgresql (>=8.3), perl, locales, pwgen, bash (>=4), ${misc:Depends}
 Recommends: apache2
 #Provides: nuxeo-dm, nuxeo-dam, nuxeo-cmf
 #Conflicts: nuxeo-dm, nuxeo-dam, nuxeo-cmf
