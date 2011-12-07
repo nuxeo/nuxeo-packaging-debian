@@ -1,0 +1,224 @@
+#!/bin/bash -e
+
+NUXEO_CONF="@nuxeo.etc.dir@/nuxeo.conf"
+
+OLDCONF="/etc/nuxeo-dm/nuxeo.conf"
+OLDINIT="/etc/init.d/nuxeo-dm"
+OLDDATA="/var/lib/nuxeo-dm"
+OLDDB="nuxeodm"
+OLDLOG="/var/log/nuxeo-dm"
+OLDPID="/var/run/nuxeo-dm"
+
+
+get_conf_var() {
+
+    RET=$(grep -E "^$1\s*=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr -d ' ')
+
+}
+
+set_conf_var() {
+
+    # Note: doesn't handle colon in key or value
+    key=$1
+    value=$2
+    has_key=$(grep -E "^#?$key\s*=" $NUXEO_CONF | wc -l)
+    if [ "$has_key" = "0" ]; then
+        echo "$key=$value" >> $NUXEO_CONF
+    else
+        perl -p -i -e "s:^#?$key\s*=.*$:$key=$value:g" $NUXEO_CONF
+    fi
+
+}
+
+del_conf_var() {
+
+    # Note: doesn't handle colon in key
+    key=$1
+    perl -p -i -e "s:^#?$key\s*=(.*)$:#$key=\1:g" $NUXEO_CONF
+
+}
+
+# Sanity checks
+
+if [ ! -f "$OLDCONF" ]; then
+    echo "ERROR: $OLDCONF does not exist - cannot migrate"
+    exit 1
+fi
+if [ "$UID" != "0" ]; then
+    echo "This script must be run as root (or with sudo)"
+    exit 1
+fi
+
+
+# Save conf file from the nuxeo pacakge
+
+if [ -f "$NUXEO_CONF" ]; then
+    mv "$NUXEO_CONF" "$NUXEO_CONF.dpkg-dist"
+fi
+
+# Replace it with the conf file from the old package
+
+mkdir -p @nuxeo.etc.dir@
+cp "$OLDCONF" "$NUXEO_CONF"
+chown @package.name.clean@:@package.name.clean@ "$NUXEO_CONF"
+
+# Check whether to move the data dir
+
+MOVE_DATA_DIR="true"
+get_conf_var nuxeo.data.dir
+if [ "$RET" != "$OLDDATA" ]; then
+    MOVE_DATA_DIR="false"
+fi
+
+# Check whether to rename the database name and database user
+# and whether it was installed by the old package
+
+MOVE_PG="true"
+USED_PG="true"
+get_conf_var nuxeo.debconf.pgsqldb
+if [ "$RET" != "auto" ]; then
+    MOVE_PG="false"
+    USED_PG="false"
+fi
+get_conf_var nuxeo.db.name
+if [ "$RET" != "$OLDDB" ]; then
+    MOVE_PG="false"
+    USED_PG="false"
+fi
+get_conf_var nuxeo.db.user
+if [ "$RET" != "$OLDDB" ]; then
+    MOVE_PG="false"
+    USED_PG="false"
+fi
+get_conf_var nuxeo.db.host
+if [ "$RET" != "localhost" ]; then
+    MOVE_PG="false"
+    USED_PG="false"
+fi
+
+# Make sure the server from the old package is stopped
+
+echo "*** Stopping old Nuxeo server ***"
+
+$OLDINIT stop
+if [ "$?" != "0" ]; then
+    # There was an issue stopping the old server, check the status
+    $OLDINIT status
+    if [ "$?" != "0" ]; then
+        # It *really* didn't want to stop
+        echo "The was a problem stopping the old server - aborting"
+        exit 1
+    fi
+fi
+
+# Change the database name and user
+
+if [ "$MOVE_PG" = "true" ]; then
+    echo "*** Moving database ***"
+    WIZARDSKIPDB=",DB"
+    get_conf_var nuxeo.db.port
+    pgport=$RET
+    get_conf_var nuxeo.db.password
+    pgpass=$RET
+    su postgres -c "psql -p $pgport template1 --quiet -t -f-" << EOF > /dev/null
+ALTER DATABASE $OLDDB RENAME TO @package.name.clean@;
+ALTER USER $OLDDB RENAME TO @package.name.clean@;
+ALTER USER @package.name.clean@ WITH PASSWORD '$pgpass';
+CREATE USER $OLDDB WITH PASSWORD '$pgpass';
+CREATE DATABASE $OLDDB WITH OWNER $OLDDB ENCODING='UTF-8';
+EOF
+    if [ "$?" != "0" ]; then
+        echo "Failed to rename old PostgreSQL database and/or user."
+        echo "Package(s) data may be in an inconsistent state."
+        exit 1
+    fi
+else
+    WIZARDSKIPDB=""
+fi
+
+# Move data dir
+
+if [ "$MOVE_DATA_DIR" = "true" ]; then
+    echo "*** Moving binaries ***"
+    rm -rf "@nuxeo.data.dir@"
+    mkdir -p @nuxeo.home.dir@
+    chown @package.name.clean@:@package.name.clean@ "@nuxeo.home.dir@"
+    mv "$OLDDATA" "@nuxeo.data.dir@"
+    if [ "$?" != "0" ]; then
+        echo "Failed to move $OLDDATA to @nuxeo.data.dir@."
+        echo "Package(s) data may be in an inconsistent state."
+        exit 1
+    fi
+    chown -R @package.name.clean@:@package.name.clean@ "@nuxeo.data.dir@"
+    if [ "$?" != "0" ]; then
+        echo "Failed to grant ownership of @nuxeo.data.dir@ to the @package.name.clean@ user."
+        echo "Package(s) data may be in an inconsistent state."
+        exit 1
+    fi
+fi
+
+# Replace things in the config file
+
+echo "*** Migrating nuxeo.conf ***"
+
+get_conf_var nuxeo.data.dir
+if [ "$RET" = "$OLDDATA" ]; then
+    set_conf_var nuxeo.data.dir @nuxeo.data.dir@
+fi
+
+get_conf_var nuxeo.log.dir
+if [ "$RET" = "$OLDDATA" ]; then
+    set_conf_var nuxeo.log.dir @nuxeo.log.dir@
+fi
+
+get_conf_var nuxeo.pid.dir
+if [ "$RET" = "$OLDDATA" ]; then
+    set_conf_var nuxeo.pid.dir @nuxeo.pid.dir@
+fi
+
+if [ "$USED_PG" = "true" ]; then
+    set_conf_var nuxeo.db.name @package.name.clean@
+    set_conf_var nuxeo.db.user @package.name.clean@
+    set_conf_var nuxeo.installer.installedpg true
+    set_conf_var nuxeo.installer.useautopg true
+    del_conf_var nuxeo.debconf.pgsqldb
+fi
+
+
+# Re-enable wizard and select DM as a preset
+
+echo "*** Reactivating configuration wizard ***"
+
+set_conf_var nuxeo.wizard.skippedpages General$WIZARDSKIPDB
+set_conf_var nuxeo.wizard.done false
+
+WIZPKGDIR="@nuxeo.home.dir@/setupWizardDownloads"
+SELECTIONFILE="$WIZPKGDIR/packages-default-selection.properties"
+mkdir -p $WIZPKGDIR
+chown @package.name.clean@:@package.name.clean@ "$WIZPKGDIR"
+echo "#Updated by Nuxeo migration script" > "$SELECTIONFILE"
+echo "#$(date)" >> "$SELECTIONFILE"
+echo "preset=nuxeo-dm" >> "$SELECTIONFILE"
+
+# Disable init script from the old package
+
+echo "*** Disabling old init script ***"
+
+mv "$OLDINIT" "$OLDINIT.dpkg-remove"
+cat << EOF > $OLDINIT
+#!/bin/bash
+if [ "\$1" = "stop" ]; then
+    echo "Server already stopped (disabled)"
+else
+    echo "\$0 disabled - data has been moved to the nuxeo pacakge"
+    echo "After checking that your new Nuxeo works correctly,"
+    echo "you should purge this package."
+fi
+exit 0
+EOF
+chmod +x $OLDINIT
+
+# All done!
+
+echo "*** Migration complete ***"
+
