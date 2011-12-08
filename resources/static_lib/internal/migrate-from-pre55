@@ -1,13 +1,57 @@
 #!/bin/bash -e
 
-NUXEO_CONF="@nuxeo.etc.dir@/nuxeo.conf"
+show_help() {
 
-OLDCONF="/etc/nuxeo-dm/nuxeo.conf"
-OLDINIT="/etc/init.d/nuxeo-dm"
-OLDDATA="/var/lib/nuxeo-dm"
-OLDDB="nuxeodm"
-OLDLOG="/var/log/nuxeo-dm"
-OLDPID="/var/run/nuxeo-dm"
+    echo "Usage: $0 [-h] [-n] -p product"
+    echo "    -h    Show this help"
+    echo "    -n    Dry run"
+    echo "    -p    Product to migrate (dm,dam,cmf)"
+
+}
+
+while getopts ":nhp:" opt
+do
+    case $opt in
+    n)
+        DRY_RUN="true"
+        ;;
+    p)
+        PRODUCT=$OPTARG
+        ;;
+    h)
+        show_help
+        exit 0
+        ;;
+    \?)
+        echo "Invalid option: -$OPTARG" >&2
+        exit 1
+        ;;
+    :)
+        echo "Option -$OPTARG requires an argument" >&2
+        exit 1
+        ;;
+    esac
+done
+
+if [ "$PRODUCT" != "dm" ] && [ "$PRODUCT" != "dam" ] && [ "$PRODUCT" != "cmf" ]; then
+    echo "Product missing or not supported"
+    show_help
+    exit 1
+fi
+
+
+if [ "$DRY_RUN" = "true" ]; then
+    NUXEO_CONF="/tmp/nuxeo.conf.migrated"
+else
+    NUXEO_CONF="@nuxeo.etc.dir@/nuxeo.conf"
+fi
+
+OLDCONF="/etc/nuxeo-$PRODUCT/nuxeo.conf"
+OLDINIT="/etc/init.d/nuxeo-$PRODUCT"
+OLDDATA="/var/lib/nuxeo-$PRODUCT"
+OLDDB="nuxeo$PRODUCT"
+OLDLOG="/var/log/nuxeo-$PRODUCT"
+OLDPID="/var/run/nuxeo-$PRODUCT"
 
 
 get_conf_var() {
@@ -21,12 +65,8 @@ set_conf_var() {
     # Note: doesn't handle colon in key or value
     key=$1
     value=$2
-    has_key=$(grep -E "^#?$key\s*=" $NUXEO_CONF | wc -l)
-    if [ "$has_key" = "0" ]; then
-        echo "$key=$value" >> $NUXEO_CONF
-    else
-        perl -p -i -e "s:^#?$key\s*=.*$:$key=$value:g" $NUXEO_CONF
-    fi
+    del_conf_var $key
+    echo "$key=$value" >> $NUXEO_CONF
 
 }
 
@@ -44,7 +84,7 @@ if [ ! -f "$OLDCONF" ]; then
     echo "ERROR: $OLDCONF does not exist - cannot migrate"
     exit 1
 fi
-if [ "$UID" != "0" ]; then
+if [ "$UID" != "0" ] && [ "$DRY_RUN" != "true" ]; then
     echo "This script must be run as root (or with sudo)"
     exit 1
 fi
@@ -58,7 +98,9 @@ fi
 
 # Replace it with the conf file from the old package
 
-mkdir -p @nuxeo.etc.dir@
+if [ "$DRY_RUN" != "true" ]; then
+    mkdir -p @nuxeo.etc.dir@
+fi
 cp "$OLDCONF" "$NUXEO_CONF"
 chown @package.name.clean@:@package.name.clean@ "$NUXEO_CONF"
 
@@ -74,38 +116,30 @@ fi
 # and whether it was installed by the old package
 
 MOVE_PG="true"
-USED_PG="true"
 get_conf_var nuxeo.debconf.pgsqldb
 if [ "$RET" != "auto" ]; then
     MOVE_PG="false"
-    USED_PG="false"
 fi
 get_conf_var nuxeo.db.name
 if [ "$RET" != "$OLDDB" ]; then
     MOVE_PG="false"
-    USED_PG="false"
 fi
 get_conf_var nuxeo.db.user
 if [ "$RET" != "$OLDDB" ]; then
     MOVE_PG="false"
-    USED_PG="false"
 fi
 get_conf_var nuxeo.db.host
 if [ "$RET" != "localhost" ]; then
     MOVE_PG="false"
-    USED_PG="false"
 fi
 
 # Make sure the server from the old package is stopped
 
 echo "*** Stopping old Nuxeo server ***"
 
-$OLDINIT stop
-if [ "$?" != "0" ]; then
-    # There was an issue stopping the old server, check the status
-    $OLDINIT status
+if [ "$DRY_RUN" != "true" ]; then
+    $OLDINIT stop
     if [ "$?" != "0" ]; then
-        # It *really* didn't want to stop
         echo "The was a problem stopping the old server - aborting"
         exit 1
     fi
@@ -120,17 +154,21 @@ if [ "$MOVE_PG" = "true" ]; then
     pgport=$RET
     get_conf_var nuxeo.db.password
     pgpass=$RET
-    su postgres -c "psql -p $pgport template1 --quiet -t -f-" << EOF > /dev/null
+    if [ "$DRY_RUN" = "true" ]; then
+        echo "Not renaming database and user: dry run"
+    else
+        su postgres -c "psql -p $pgport template1 --quiet -t -f-" << EOF > /dev/null
 ALTER DATABASE $OLDDB RENAME TO @package.name.clean@;
 ALTER USER $OLDDB RENAME TO @package.name.clean@;
 ALTER USER @package.name.clean@ WITH PASSWORD '$pgpass';
 CREATE USER $OLDDB WITH PASSWORD '$pgpass';
 CREATE DATABASE $OLDDB WITH OWNER $OLDDB ENCODING='UTF-8';
 EOF
-    if [ "$?" != "0" ]; then
-        echo "Failed to rename old PostgreSQL database and/or user."
-        echo "Package(s) data may be in an inconsistent state."
-        exit 1
+        if [ "$?" != "0" ]; then
+            echo "Failed to rename old PostgreSQL database and/or user."
+            echo "Package(s) data may be in an inconsistent state."
+            exit 1
+        fi
     fi
 else
     WIZARDSKIPDB=""
@@ -140,20 +178,24 @@ fi
 
 if [ "$MOVE_DATA_DIR" = "true" ]; then
     echo "*** Moving binaries ***"
-    rm -rf "@nuxeo.data.dir@"
-    mkdir -p @nuxeo.home.dir@
-    chown @package.name.clean@:@package.name.clean@ "@nuxeo.home.dir@"
-    mv "$OLDDATA" "@nuxeo.data.dir@"
-    if [ "$?" != "0" ]; then
-        echo "Failed to move $OLDDATA to @nuxeo.data.dir@."
-        echo "Package(s) data may be in an inconsistent state."
-        exit 1
-    fi
-    chown -R @package.name.clean@:@package.name.clean@ "@nuxeo.data.dir@"
-    if [ "$?" != "0" ]; then
-        echo "Failed to grant ownership of @nuxeo.data.dir@ to the @package.name.clean@ user."
-        echo "Package(s) data may be in an inconsistent state."
-        exit 1
+    if [ "$DRY_RUN" = "true" ]; then
+        echo "Not moving $OLDDATA to @nuxeo.data.dir@: dry run"
+    else
+        rm -rf "@nuxeo.data.dir@"
+        mkdir -p @nuxeo.home.dir@
+        chown @package.name.clean@:@package.name.clean@ "@nuxeo.home.dir@"
+        mv "$OLDDATA" "@nuxeo.data.dir@"
+        if [ "$?" != "0" ]; then
+            echo "Failed to move $OLDDATA to @nuxeo.data.dir@."
+            echo "Package(s) data may be in an inconsistent state."
+            exit 1
+        fi
+        chown -R @package.name.clean@:@package.name.clean@ "@nuxeo.data.dir@"
+        if [ "$?" != "0" ]; then
+            echo "Failed to grant ownership of @nuxeo.data.dir@ to the @package.name.clean@ user."
+            echo "Package(s) data may be in an inconsistent state."
+            exit 1
+        fi
     fi
 fi
 
@@ -161,22 +203,24 @@ fi
 
 echo "*** Migrating nuxeo.conf ***"
 
+echo "# Values added or modified by the migration script" >> $NUXEO_CONF
+
 get_conf_var nuxeo.data.dir
 if [ "$RET" = "$OLDDATA" ]; then
     set_conf_var nuxeo.data.dir @nuxeo.data.dir@
 fi
 
 get_conf_var nuxeo.log.dir
-if [ "$RET" = "$OLDDATA" ]; then
+if [ "$RET" = "$OLDLOG" ]; then
     set_conf_var nuxeo.log.dir @nuxeo.log.dir@
 fi
 
 get_conf_var nuxeo.pid.dir
-if [ "$RET" = "$OLDDATA" ]; then
+if [ "$RET" = "$OLDPID" ]; then
     set_conf_var nuxeo.pid.dir @nuxeo.pid.dir@
 fi
 
-if [ "$USED_PG" = "true" ]; then
+if [ "$MOVE_PG" = "true" ]; then
     set_conf_var nuxeo.db.name @package.name.clean@
     set_conf_var nuxeo.db.user @package.name.clean@
     set_conf_var nuxeo.installer.installedpg true
@@ -194,18 +238,24 @@ set_conf_var nuxeo.wizard.done false
 
 WIZPKGDIR="@nuxeo.home.dir@/setupWizardDownloads"
 SELECTIONFILE="$WIZPKGDIR/packages-default-selection.properties"
-mkdir -p $WIZPKGDIR
-chown @package.name.clean@:@package.name.clean@ "$WIZPKGDIR"
-echo "#Updated by Nuxeo migration script" > "$SELECTIONFILE"
-echo "#$(date)" >> "$SELECTIONFILE"
-echo "preset=nuxeo-dm" >> "$SELECTIONFILE"
+if [ "$DRY_RUN" = "true" ]; then
+    echo "Not activating preset nuxeo-$PRODUCT: dry run"
+else
+    mkdir -p $WIZPKGDIR
+    chown @package.name.clean@:@package.name.clean@ "$WIZPKGDIR"
+    echo "#Updated by Nuxeo migration script" > "$SELECTIONFILE"
+    echo "#$(date)" >> "$SELECTIONFILE"
+    echo "preset=nuxeo-$PRODUCT" >> "$SELECTIONFILE"
+fi
 
 # Disable init script from the old package
 
 echo "*** Disabling old init script ***"
-
-mv "$OLDINIT" "$OLDINIT.dpkg-remove"
-cat << EOF > $OLDINIT
+if [ "$DRY_RUN" = "true" ]; then
+    echo "Not disabling $OLDINIT: dry run"
+else
+    mv "$OLDINIT" "$OLDINIT.dpkg-remove"
+    cat << EOF > $OLDINIT
 #!/bin/bash
 if [ "\$1" = "stop" ]; then
     echo "Server already stopped (disabled)"
@@ -216,9 +266,14 @@ else
 fi
 exit 0
 EOF
-chmod +x $OLDINIT
+    chmod +x $OLDINIT
+fi
 
 # All done!
 
 echo "*** Migration complete ***"
+
+if [ "$DRY_RUN" = "true" ]; then
+    echo "The migrated nuxeo.conf is in /tmp/nuxeo.conf.migrate"
+fi
 
