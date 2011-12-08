@@ -13,3 +13,5 @@ done
 
 popd
 
+chmod +x debian/@package.name@/usr/lib/@package.name@/internal/migrate-from-pre55
+

@@ -98,13 +98,13 @@ case "$1" in
         fi
 
         # Remove the user if we created it
-        db_get @package.name@/installeduser
+        db_get @package.name@/installeduser || true
         if [ "$RET" = "true" ]; then
             delete_user
         fi
 
         # Purge database if we created it
-        db_get @package.name@/installedpg
+        db_get @package.name@/installedpg || true
         if [ "$RET" = "true" ]; then
             cleanup_nuxeo_cluster
         fi

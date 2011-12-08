@@ -38,7 +38,7 @@ fi
 
 
 STATE=1
-STATE_EXIT=5
+STATE_EXIT=6
 
 selectedip=""
 errbadip=""
@@ -57,6 +57,58 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
     case "$STATE" in
 
     1)
+        oldpkgcount=0
+        dmstatus=$(dpkg-query --show --showformat='${Status}' nuxeo-dm 2>&1 | awk '{print $NF}')
+        damstatus=$(dpkg-query --show --showformat='${Status}' nuxeo-dam 2>&1 | awk '{print $NF}')
+        cmfstatus=$(dpkg-query --show --showformat='${Status}' nuxeo-cmf 2>&1 | awk '{print $NF}')
+        oldpkgnames=""
+        if [ "$dmstatus" = "installed" ]; then
+            oldpkgcount=$(($oldpkgcount+1))
+            oldpkgname="nuxeo-dm"
+            if [ "${oldpkgnames}" = "" ]; then
+                oldpkgnames="nuxeo-dm"
+            else
+                oldpkgnames="${oldpkgnames}, nuxeo-dm"
+            fi
+        fi
+        if [ "$damstatus" = "installed" ]; then
+            oldpkgcount=$(($oldpkgcount+1))
+            oldpkgname="nuxeo-dam"
+            if [ "${oldpkgnames}" = "" ]; then
+                oldpkgnames="nuxeo-dam"
+            else
+                oldpkgnames="${oldpkgnames}, nuxeo-dam"
+            fi
+        fi
+        if [ "$cmfstatus" = "installed" ]; then
+            oldpkgcount=$(($oldpkgcount+1))
+            oldpkgname="nuxeo-cmf"
+            if [ "${oldpkgnames}" = "" ]; then
+                oldpkgnames="nuxeo-cmf"
+            else
+                oldpkgnames="${oldpkgnames}, nuxeo-cmf"
+            fi
+        fi
+
+        db_capb escape
+        db_beginblock
+        if [ "$oldpkgcount" = "1" ]; then
+            db_subst @package.name@/migratenotesingle oldpkgname ${oldpkgname}
+            db_subst @package.name@/migratesingle oldpkgname ${oldpkgname}
+            db_input critical @package.name@/migratenotesingle || true
+            db_input critical @package.name@/migratesingle || true
+        elif [ "$oldpkgcount" != "0" ]; then
+            nomigration="No migration"
+            db_subst @package.name@/migratenotemultiple oldpkgnames "${oldpkgnames}"
+            db_subst @package.name@/migratechoice nomigration "${nomigration}"
+            db_subst @package.name@/migratechoice oldpkgnames "${oldpkgnames}"
+            db_input critical @package.name@/migratenotemultiple || true
+            db_input critical @package.name@/migratechoice || true
+        fi
+        db_endblock
+    ;;
+
+    2)
         db_capb escape
         db_beginblock
         if [ ! -z "$errbadip" ]; then
@@ -68,7 +120,7 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
         db_endblock
     ;;
 
-    2)
+    3)
         db_capb escape backup
         db_beginblock
         if [ ! -z "$errbadhttp" ]; then
@@ -85,7 +137,7 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
         db_endblock
     ;;
 
-    3)
+    4)
         db_capb escape backup
         db_beginblock
         if [ ! -z "$errbadajp" ]; then
@@ -105,7 +157,7 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
         db_endblock
     ;;
 
-    4)
+    5)
         db_capb escape backup
         db_input high @package.name@/database || true
     ;;
@@ -114,8 +166,31 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
 
     if db_go; then
 
-        # Validate IP input
+        # Migration from pre-5.5 package
         if [ "$STATE" = "1" ]; then
+
+            if [ "$oldpkgcount" = "1" ]; then
+                db_get @package.name@/migratesingle
+                if [ "$RET" = "true" ]; then
+                    db_set @package.name@/migrate true
+                    db_set @package.name@/migratepkg $oldpkgname
+                    # Skip other questions, we'll get the conf from the old package
+                    STATE=$(($STATE_EXIT-1))
+                fi
+            elif [ "$oldpkgcount" != "0" ]; then
+                db_get @package.name@/migratechoice
+                mchoice=$RET
+                if [ "$mchoice" != "$nomigration" ]; then
+                    db_set @package.name@/migrate true
+                    db_set @package.name@/migratepkg $mchoice
+                    # Skip other questions, we'll get the conf from the old package
+                    STATE=$(($STATE_EXIT-1))
+                fi
+            fi
+        fi
+
+        # Validate IP input
+        if [ "$STATE" = "2" ]; then
             db_get @package.name@/bind-address
             selectedip=$RET
             validate_ip_address $selectedip
@@ -130,7 +205,7 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
         fi
 
         # Validate HTTP port input
-        if [ "$STATE" = "2" ]; then
+        if [ "$STATE" = "3" ]; then
             db_get @package.name@/http-port
             selectedhttp=$RET
             validate_port_syntax $selectedhttp
@@ -153,7 +228,7 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
         fi
 
         # Validate AJP port input
-        if [ "$STATE" = "3" ]; then
+        if [ "$STATE" = "4" ]; then
             db_get @package.name@/ajp-port
             selectedajp=$RET
             validate_port_syntax $selectedajp

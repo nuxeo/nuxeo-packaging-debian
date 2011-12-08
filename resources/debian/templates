@@ -67,3 +67,58 @@ Default: false
 _Description: for internal use
   Internal use
 
+Template: @package.name@/migratenotesingle
+Type: note
+_Description: Migration from an older Nuxeo
+  An installation of the ${oldpkgname} package has been detected.
+  You have the possibility to move its data and configuration to
+  the new package.
+  *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***
+  If you choose to perform the migration, this will:
+  - copy and adapt your configuration,
+  - move your the old package's data directory,
+  - if applicable, rename the autoconfigured database and user,
+  - disable the ${oldpkgname} control script.
+  This will *not* migrate any custom template you may have.
+  *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***
+
+Template: @package.name@/migratesingle
+Type: boolean
+Default: false
+_Description: Do you want to migrate from ${oldpkgname}?
+  NOT YET IMPLEMENTED
+
+Template: @package.name@/migratenotemultiple
+Type: note
+_Description: Migration from an older Nuxeo
+  Installations of several old Nuxeo packages has been detected:
+  ${oldpkgnames}
+  You have the possibility to move to the new package the data
+  and configuration from a single one.
+  *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***
+  If you choose to perform the migration, this will:
+  - copy and adapt your configuration,
+  - move your the old package's data directory,
+  - if applicable, rename the autoconfigured database and user,
+  - disable the selected package's control script.
+  This will *not* migrate any custom template you may have.
+  *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***
+
+Template: @package.name@/migratechoice
+Type: select
+__Choices: ${nomigration}, ${oldpkgnames}
+Default: ${nomigration}
+_Description: Which package do you want to migrate?
+  NOT YET IMPLEMENTED
+
+Template: @package.name@/migrate
+Type: boolean
+Default: false
+_Description: for internal use
+  Internal use
+
+Template: @package.name@/migratepkg
+Type: string
+_Description: for internal use
+  Internal use
+

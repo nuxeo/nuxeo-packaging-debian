@@ -87,11 +87,11 @@ set_conf_var() {
     # Note: doesn't handle colon in key or value
     key=$1
     value=$2
-    has_key=$(grep -E "^#?$key=" $NUXEO_CONF | wc -l)
+    has_key=$(grep -E "^#?$key\s*=" $NUXEO_CONF | wc -l)
     if [ "$has_key" = "0" ]; then
         echo "$key=$value" >> $NUXEO_CONF
     else
-        perl -p -i -e "s:^#?$key=.*$:$key=$value:g" $NUXEO_CONF
+        perl -p -i -e "s:^#?$key\s*=.*$:$key=$value:g" $NUXEO_CONF
     fi
 
 }
@@ -176,7 +176,14 @@ get_existing_conf() {
     fi
 
     get_conf_var nuxeo.installer.installedpg
-    db_set @package.name@/installedpg $RET
+    if [ ! -z "$RET" ]; then
+        db_set @package.name@/installedpg $RET
+    fi
+
+    get_conf_var nuxeo.installer.migratefrompre55
+    if [ ! -z "$RET" ]; then
+        db_set @package.name@/migratefrompre55 $RET
+    fi
 
 }
 
