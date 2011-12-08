@@ -7,8 +7,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: @package.fullversion@\n"
-"Report-Msgid-Bugs-To: packagers@nuxeo.com\n"
-"POT-Creation-Date: 2011-06-24 17:31+0200\n"
+"Report-Msgid-Bugs-To: @package.name@@packages.debian.org\n"
+"POT-Creation-Date: 2011-12-08 23:56+0100\n"
 "PO-Revision-Date: 2011-06-27 14:30+0200\n"
 "Last-Translator: Nuxeo Packagers <packagers@nuxeo.com>\n"
 "Language-Team: French <fr@li.org>\n"
@@ -35,48 +35,58 @@ msgstr "Erreur"
 #. Type: error
 #. Description
 #: ../templates:1001
-msgid " IP address is invalid: ${ipaddress}"
-msgstr " L'adresse IP est invalide: ${ipaddress}"
+msgid "IP address is invalid: ${ipaddress}"
+msgstr "L'adresse IP est invalide: ${ipaddress}"
 
 #. Type: error
 #. Description
 #: ../templates:2001
+#, fuzzy
+#| msgid ""
+#| "HTTP port is invalid: ${httpport}\n"
+#| "It must be a number between 1024 and 65535."
 msgid ""
-" HTTP port is invalid: ${httpport}\n"
-" It must be a number between 1024 and 65535."
+"HTTP port is invalid: ${httpport} It must be a number between 1024 and 65535."
 msgstr ""
-" Le port HTTP est invalide: ${httpport}\n"
-" Ce doit être un entier entre 1024 et 65535."
+"Le port HTTP est invalide: ${httpport}\n"
+"Ce doit être un entier entre 1024 et 65535."
 
 #. Type: error
 #. Description
 #: ../templates:3001
-msgid ""
-" Selected HTTP port (${httpport}) already in use.\n"
-" (re-enter to force)"
+#, fuzzy
+#| msgid ""
+#| "Selected HTTP port (${httpport}) already in use.\n"
+#| "(re-enter to force)"
+msgid "Selected HTTP port (${httpport}) already in use. (re-enter to force)"
 msgstr ""
-" Le port HTTP sélectionné (${httpport}) est déjà utilisé.\n"
-" (entrez à nouveau pour forcer)"
+"Le port HTTP sélectionné (${httpport}) est déjà utilisé.\n"
+"(entrez à nouveau pour forcer)"
 
 #. Type: error
 #. Description
 #: ../templates:4001
+#, fuzzy
+#| msgid ""
+#| "AJP port is invalid: ${ajpport}\n"
+#| "It must be a number between 1024 and 65535."
 msgid ""
-" AJP port is invalid: ${ajpport}\n"
-" It must be a number between 1024 and 65535."
+"AJP port is invalid: ${ajpport} It must be a number between 1024 and 65535."
 msgstr ""
-" Le port AJP est invalide: ${ajpport}\n"
-" Ce doit être un entier entre 1024 et 65535."
+"Le port AJP est invalide: ${ajpport}\n"
+"Ce doit être un entier entre 1024 et 65535."
 
 #. Type: error
 #. Description
 #: ../templates:5001
-msgid ""
-" Selected AJP port (${ajpport}) already in use.\n"
-" (re-enter to force)"
+#, fuzzy
+#| msgid ""
+#| "Selected AJP port (${ajpport}) already in use.\n"
+#| "(re-enter to force)"
+msgid "Selected AJP port (${ajpport}) already in use. (re-enter to force)"
 msgstr ""
-" Le port AJP sélectionné (${ajpport}) est déjà utilisé.\n"
-" (entrez à nouveau pour forcer)"
+"Le port AJP sélectionné (${ajpport}) est déjà utilisé.\n"
+"(entrez à nouveau pour forcer)"
 
 #. Type: string
 #. Description
@@ -87,12 +97,14 @@ msgstr "Adresse d'écoute:"
 #. Type: string
 #. Description
 #: ../templates:6001
-msgid ""
-" IP address you would you the server\n"
-" to listen on."
+#, fuzzy
+#| msgid ""
+#| "IP address you would you the server\n"
+#| "to listen on."
+msgid "IP address you would you the server to listen on."
 msgstr ""
-" Adresse IP sur laquelle vous voulez\n"
-" que le serveur écoute."
+"Adresse IP sur laquelle vous voulez\n"
+"que le serveur écoute."
 
 #. Type: string
 #. Description
@@ -103,12 +115,14 @@ msgstr "Port HTTP à utiliser:"
 #. Type: string
 #. Description
 #: ../templates:7001
-msgid ""
-" Port you would like the server to\n"
-" listen on for the HTTP protocol."
+#, fuzzy
+#| msgid ""
+#| "Port you would like the server to\n"
+#| "listen on for the HTTP protocol."
+msgid "Port you would like the server to listen on for the HTTP protocol."
 msgstr ""
-" Le port sur lequel vous voulez que\n"
-" le serveur écoute pour le protocole HTTP."
+"Le port sur lequel vous voulez que\n"
+"le serveur écoute pour le protocole HTTP."
 
 #. Type: string
 #. Description
@@ -119,12 +133,14 @@ msgstr "Port AJP à utiliser (0=désactivé):"
 #. Type: string
 #. Description
 #: ../templates:8001
-msgid ""
-" Port you would like the server to\n"
-" listen on for the AJP protocol."
+#, fuzzy
+#| msgid ""
+#| "Port you would like the server to\n"
+#| "listen on for the AJP protocol."
+msgid "Port you would like the server to listen on for the AJP protocol."
 msgstr ""
-" Le port sur lequel vous voulez que\n"
-" le serveur écoute pour le protocole AJP."
+"Le port sur lequel vous voulez que\n"
+"le serveur écoute pour le protocole AJP."
 
 #. Type: select
 #. Choices
@@ -147,18 +163,149 @@ msgstr "Base de données:"
 #. Type: select
 #. Description
 #: ../templates:9002
-msgid " Backend database to use."
-msgstr " Base de données à utiliser."
+msgid "Backend database to use."
+msgstr "Base de données à utiliser."
 
-#.Type: boolean
+#. Type: boolean
 #. Description
-#: ../templates:10001
+#. Type: boolean
+#. Description
+#. Type: boolean
+#. Description
+#. Type: string
+#. Description
+#: ../templates:10001 ../templates:11001 ../templates:16001 ../templates:17001
 msgid "for internal use"
 msgstr "a usage interne"
 
-#.Type: boolean
+#. Type: boolean
 #. Description
-#: ../templates:10002
-msgid " Internal use"
-msgstr " Usage interne"
+#. Type: boolean
+#. Description
+#. Type: boolean
+#. Description
+#. Type: string
+#. Description
+#: ../templates:10001 ../templates:11001 ../templates:16001 ../templates:17001
+msgid "Internal use"
+msgstr "Usage interne"
 
+#. Type: note
+#. Description
+#. Type: note
+#. Description
+#: ../templates:12001 ../templates:14001
+msgid "Migration from an older Nuxeo"
+msgstr "Migration à partir d'une ancienne version de Nuxeo"
+
+#. Type: note
+#. Description
+#: ../templates:12001
+msgid ""
+" An installation of the ${oldpkgname} package has been detected.\n"
+" You have the possibility to move its data and configuration to\n"
+" the new package."
+msgstr ""
+" Une instance du paquet ${oldpkgname} a été détectée.\n"
+" Vous avez la possibilité de déplacer ses données et sa configuration\n"
+" vers le nouveau paquet."
+
+#. Type: note
+#. Description
+#. Type: note
+#. Description
+#. Type: note
+#. Description
+#. Type: note
+#. Description
+#: ../templates:12001 ../templates:14001
+msgid " *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***"
+msgstr " *** LES DONNEES EJA PRESENTES DANS LE NOUVEAU PAQUET SERONT PERDUES ***"
+
+#. Type: note
+#. Description
+#: ../templates:12001
+msgid ""
+" If you choose to perform the migration, this will:\n"
+" - copy and adapt your configuration,\n"
+" - move your the old package's data directory,\n"
+" - if applicable, rename the autoconfigured database and user,\n"
+" - disable the ${oldpkgname} control script."
+msgstr ""
+" Si vous choisissez d'effectuer la migration:\n"
+" - la configuration sera copiée et adaptée,\n"
+" - le répertoire de données de l'ancien paquet sera déplacé,\n"
+" - s'il y a lieu, las noms de la base de données et de l'utilisateur\n"
+"   de la base auto-configurée seront renommés,\n"
+" - le script de contrôle de ${oldpkgname} sera désactivé."
+
+#. Type: note
+#. Description
+#. Type: note
+#. Description
+#: ../templates:12001 ../templates:14001
+msgid " This will *not* migrate any custom template you may have."
+msgstr " Cela *ne migrera pas* les templates personalisés que vous pourriez avoir."
+
+#. Type: boolean
+#. Description
+#: ../templates:13001
+msgid "Do you want to migrate from ${oldpkgname}?"
+msgstr "Voulez vous effectuer la migration à partir de ${oldpkgname}?"
+
+#. Type: boolean
+#. Description
+#. Type: select
+#. Description
+#: ../templates:13001 ../templates:15002
+msgid "EXPERIMENTAL - BACKUP YOUR DATA !!!"
+msgstr "EXPERIMENTAL - SAUVEGARDEZ VOS DONNEES !!!"
+
+#. Type: note
+#. Description
+#: ../templates:14001
+msgid ""
+" Installations of several old Nuxeo packages has been detected:\n"
+" ${oldpkgnames}\n"
+" You have the possibility to move to the new package the data\n"
+" and configuration from a single one."
+msgstr ""
+" Plusieurs instances d'anciens paquets Nuxeo ont été détectées:\n"
+" ${oldpkgnames}\n"
+" Vous avez la possibilité de migrer les données et la configuration\n"
+" d'un unique ancien paquet vers le nouveau."
+
+#. Type: note
+#. Description
+#: ../templates:14001
+msgid ""
+" If you choose to perform the migration, this will:\n"
+" - copy and adapt your configuration,\n"
+" - move your the old package's data directory,\n"
+" - if applicable, rename the autoconfigured database and user,\n"
+" - disable the selected package's control script."
+msgstr ""
+" Si vous choisissez d'effectuer la migration:\n"
+" - la configuration sera copiée et adaptée,\n"
+" - le répertoire de données de l'ancien paquet sera déplacé,\n"
+" - s'il y a lieu, las noms de la base de données et de l'utilisateur\n"
+"   de la base auto-configurée seront renommés,\n"
+" - le script de contrôle du paquet sélectionné sera désactivé."
+
+#. Type: select
+#. Choices
+#: ../templates:15001
+msgid "${nomigration}"
+msgstr "Pas de migration"
+
+#. Type: select
+#. Choices
+#: ../templates:15001
+msgid "${oldpkgnames}"
+msgstr "${oldpkgnames}"
+
+#. Type: select
+#. Description
+#: ../templates:15002
+msgid "Which package do you want to migrate?"
+msgstr "Quel paquet voulez-vous migrer?"

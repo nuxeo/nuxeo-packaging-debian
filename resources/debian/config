@@ -186,6 +186,8 @@ while [ "$STATE" != 0 -a "$STATE" != "$STATE_EXIT" ]; do
                     # Skip other questions, we'll get the conf from the old package
                     STATE=$(($STATE_EXIT-1))
                 fi
+            else
+                db_set @package.name@/migrate false
             fi
         fi
 

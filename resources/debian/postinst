@@ -213,6 +213,22 @@ configure_nuxeo() {
 
 }
 
+configure_office() {
+
+    # Office suite path
+    get_conf_var jod.office.home
+    if [ -z "$RET" ]; then
+        if [ -d /usr/lib/libreoffice ]; then
+            set_conf_var jod.office.home /usr/lib/libreoffice
+        elif [ -d /usr/lib/openoffice ]; then
+            set_conf_var jod.office.home /usr/lib/openoffice
+        elif [ -d /opt/openoffice.org3 ]; then
+            set_conf_var jod.office.home /opt/openoffice.org3
+        fi
+    fi
+
+}
+
 activate_wizard() {
 
     set_conf_var nuxeo.wizard.done false
@@ -351,11 +367,26 @@ set_last_installed_version() {
 
 migrate_from_pre55() {
 
-    MIGRATEFROM=$1
     # Read user choice
+    db_get @package.name@/migrate || true
+    if [ "$RET" = "false" ]; then
+        return
+    fi
+    db_get @package.name@/migratepkg || true
+    migratepkg=$RET
     # Execute script
+    if [ "$migratepkg" = "nuxeo-dm" ]; then
+        /usr/lib/@package.name@/internal/migrate-from-pre55 -p dm
+    elif [ "$migratepkg" = "nuxeo-dam" ]; then
+        /usr/lib/@package.name@/internal/migrate-from-pre55 -p dam
+    elif [ "$migratepkg" = "nuxeo-cmf" ]; then
+        /usr/lib/@package.name@/internal/migrate-from-pre55 -p cmf
+    else
+        echo "Something went wrong - can't get name of package to migrate"
+        exit 1
+    fi
     # Reread config
-    echo "Nothing"
+    get_existing_conf
 
 }
 
@@ -368,9 +399,15 @@ if [ "$1" = "reconfigure" ] || [ "$DEBCONF_RECONFIGURE" ]; then
 elif [ "$1" = "configure" ] && [ -z "$2" ]; then
     create_user
     configure_paths
-    configure_nuxeo
-    migrate_from_pre55
-    activate_wizard
+    db_get @package.name@/migrate || true
+    migrate=$RET
+    if [ "$migrate" = "true" ]; then
+        migrate_from_pre55
+    else
+        configure_nuxeo
+        activate_wizard
+    fi
+    configure_office
     set_last_installed_version
     db_stop
 # upgrade (old version set)

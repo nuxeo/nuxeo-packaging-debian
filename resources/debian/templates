@@ -1,71 +1,71 @@
 Template: @package.name@/errbadip
 Type: error
 _Description: Error:
-  IP address is invalid: ${ipaddress}
+ IP address is invalid: ${ipaddress}
 
 Template: @package.name@/errbadhttp
 Type: error
 _Description: Error:
-  HTTP port is invalid: ${httpport}
-  It must be a number between 1024 and 65535.
+ HTTP port is invalid: ${httpport}
+ It must be a number between 1024 and 65535.
 
 Template: @package.name@/errhttpinuse
 Type: error
 _Description: Error:
-  Selected HTTP port (${httpport}) already in use.
-  (re-enter to force)
+ Selected HTTP port (${httpport}) already in use.
+ (re-enter to force)
 
 Template: @package.name@/errbadajp
 Type: error
 _Description: Error:
-  AJP port is invalid: ${ajpport}
-  It must be a number between 1024 and 65535.
+ AJP port is invalid: ${ajpport}
+ It must be a number between 1024 and 65535.
 
 Template: @package.name@/errajpinuse
 Type: error
 _Description: Error:
-  Selected AJP port (${ajpport}) already in use.
-  (re-enter to force)
+ Selected AJP port (${ajpport}) already in use.
+ (re-enter to force)
 
 Template: @package.name@/bind-address
 Type: string
 Default: 0.0.0.0
 _Description: Bind address:
-  IP address you would you the server
-  to listen on.
+ IP address you would you the server
+ to listen on.
 
 Template: @package.name@/http-port
 Type: string
 Default: 8080
 _Description: Listening port for HTTP:
-  Port you would like the server to
-  listen on for the HTTP protocol.
+ Port you would like the server to
+ listen on for the HTTP protocol.
 
 Template: @package.name@/ajp-port
 Type: string
 Default: 0
 _Description: Listening port for AJP (0=disabled):
-  Port you would like the server to
-  listen on for the AJP protocol.
+ Port you would like the server to
+ listen on for the AJP protocol.
 
 Template: @package.name@/database
 Type: select
 __Choices: Autoconfigure PostgreSQL, Configure database in wizard
 Default: Autoconfigure PostgreSQL
 _Description: Backend database:
-  Backend database to use.
+ Backend database to use.
 
 Template: @package.name@/installedpg
 Type: boolean
 Default: false
 _Description: for internal use
-  Internal use
+ Internal use
 
 Template: @package.name@/installeduser
 Type: boolean
 Default: false
 _Description: for internal use
-  Internal use
+ Internal use
 
 Template: @package.name@/migratenotesingle
 Type: note
@@ -73,20 +73,24 @@ _Description: Migration from an older Nuxeo
   An installation of the ${oldpkgname} package has been detected.
   You have the possibility to move its data and configuration to
   the new package.
+ .
   *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***
+ .
   If you choose to perform the migration, this will:
   - copy and adapt your configuration,
   - move your the old package's data directory,
   - if applicable, rename the autoconfigured database and user,
   - disable the ${oldpkgname} control script.
+ .
   This will *not* migrate any custom template you may have.
+ .
   *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***
 
 Template: @package.name@/migratesingle
 Type: boolean
 Default: false
 _Description: Do you want to migrate from ${oldpkgname}?
-  NOT YET IMPLEMENTED
+ EXPERIMENTAL - BACKUP YOUR DATA !!!
 
 Template: @package.name@/migratenotemultiple
 Type: note
@@ -95,13 +99,17 @@ _Description: Migration from an older Nuxeo
   ${oldpkgnames}
   You have the possibility to move to the new package the data
   and configuration from a single one.
+ .
   *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***
+ .
   If you choose to perform the migration, this will:
   - copy and adapt your configuration,
   - move your the old package's data directory,
   - if applicable, rename the autoconfigured database and user,
   - disable the selected package's control script.
+ .
   This will *not* migrate any custom template you may have.
+ .
   *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***
 
 Template: @package.name@/migratechoice
@@ -109,16 +117,16 @@ Type: select
 __Choices: ${nomigration}, ${oldpkgnames}
 Default: ${nomigration}
 _Description: Which package do you want to migrate?
-  NOT YET IMPLEMENTED
+ EXPERIMENTAL - BACKUP YOUR DATA !!!
 
 Template: @package.name@/migrate
 Type: boolean
 Default: false
 _Description: for internal use
-  Internal use
+ Internal use
 
 Template: @package.name@/migratepkg
 Type: string
 _Description: for internal use
-  Internal use
+ Internal use
 

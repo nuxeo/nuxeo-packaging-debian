@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+. /usr/lib/@package.name@/internal/pkg-helper-functions
+
 show_help() {
 
     echo "Usage: $0 [-h] [-n] -p product"
@@ -42,8 +44,6 @@ fi
 
 if [ "$DRY_RUN" = "true" ]; then
     NUXEO_CONF="/tmp/nuxeo.conf.migrated"
-else
-    NUXEO_CONF="@nuxeo.etc.dir@/nuxeo.conf"
 fi
 
 OLDCONF="/etc/nuxeo-$PRODUCT/nuxeo.conf"
@@ -53,30 +53,6 @@ OLDDB="nuxeo$PRODUCT"
 OLDLOG="/var/log/nuxeo-$PRODUCT"
 OLDPID="/var/run/nuxeo-$PRODUCT"
 
-
-get_conf_var() {
-
-    RET=$(grep -E "^$1\s*=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr -d ' ')
-
-}
-
-set_conf_var() {
-
-    # Note: doesn't handle colon in key or value
-    key=$1
-    value=$2
-    del_conf_var $key
-    echo "$key=$value" >> $NUXEO_CONF
-
-}
-
-del_conf_var() {
-
-    # Note: doesn't handle colon in key
-    key=$1
-    perl -p -i -e "s:^#?$key\s*=(.*)$:#$key=\1:g" $NUXEO_CONF
-
-}
 
 # Sanity checks
 
@@ -157,6 +133,7 @@ if [ "$MOVE_PG" = "true" ]; then
     if [ "$DRY_RUN" = "true" ]; then
         echo "Not renaming database and user: dry run"
     else
+        pushd /tmp > /dev/null
         su postgres -c "psql -p $pgport template1 --quiet -t -f-" << EOF > /dev/null
 ALTER DATABASE $OLDDB RENAME TO @package.name.clean@;
 ALTER USER $OLDDB RENAME TO @package.name.clean@;
@@ -164,6 +141,7 @@ ALTER USER @package.name.clean@ WITH PASSWORD '$pgpass';
 CREATE USER $OLDDB WITH PASSWORD '$pgpass';
 CREATE DATABASE $OLDDB WITH OWNER $OLDDB ENCODING='UTF-8';
 EOF
+        popd > /dev/null
         if [ "$?" != "0" ]; then
             echo "Failed to rename old PostgreSQL database and/or user."
             echo "Package(s) data may be in an inconsistent state."
@@ -229,24 +207,36 @@ if [ "$MOVE_PG" = "true" ]; then
 fi
 
 
-# Re-enable wizard and select DM as a preset
+# Re-enable wizard and select preset
+#
+#echo "*** Reactivating configuration wizard ***"
+#
+#set_conf_var nuxeo.wizard.skippedpages General$WIZARDSKIPDB
+#set_conf_var nuxeo.wizard.done false
+#
+#WIZPKGDIR="@nuxeo.home.dir@/setupWizardDownloads"
+#SELECTIONFILE="$WIZPKGDIR/packages-default-selection.properties"
+#if [ "$DRY_RUN" = "true" ]; then
+#    echo "Not activating preset nuxeo-$PRODUCT: dry run"
+#else
+#    mkdir -p $WIZPKGDIR
+#    chown @package.name.clean@:@package.name.clean@ "$WIZPKGDIR"
+#    echo "#Updated by Nuxeo migration script" > "$SELECTIONFILE"
+#    echo "#$(date)" >> "$SELECTIONFILE"
+#    echo "preset=nuxeo-$PRODUCT" >> "$SELECTIONFILE"
+#    chown @package.name.clean@:@package.name.clean@ "$SELECTIONFILE"
+#fi
 
-echo "*** Reactivating configuration wizard ***"
+# Activate preset corresponding to the old package
 
-set_conf_var nuxeo.wizard.skippedpages General$WIZARDSKIPDB
-set_conf_var nuxeo.wizard.done false
+echo "*** Activating nuxeo-$PRODUCT application module ***"
 
 WIZPKGDIR="@nuxeo.home.dir@/setupWizardDownloads"
-SELECTIONFILE="$WIZPKGDIR/packages-default-selection.properties"
-if [ "$DRY_RUN" = "true" ]; then
-    echo "Not activating preset nuxeo-$PRODUCT: dry run"
-else
-    mkdir -p $WIZPKGDIR
-    chown @package.name.clean@:@package.name.clean@ "$WIZPKGDIR"
-    echo "#Updated by Nuxeo migration script" > "$SELECTIONFILE"
-    echo "#$(date)" >> "$SELECTIONFILE"
-    echo "preset=nuxeo-$PRODUCT" >> "$SELECTIONFILE"
-fi
+MD5=$(cat $WIZPKGDIR/packages.xml | awk "/id=\"nuxeo-$PRODUCT\"/,/\/>/" | grep -oE 'md5="([^"]*)"' | sed -E 's/md5="(.*)"/\1/') || MD5=""
+export NUXEO_CONF
+su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-install $WIZPKGDIR/$MD5" | grep -v "^Nuxeo home:" | grep -v "Nuxeo configuration:" | grep -v -e "Template .* not found"
+export -n NUXEO_CONF
+
 
 # Disable init script from the old package
 

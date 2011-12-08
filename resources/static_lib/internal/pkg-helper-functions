@@ -78,7 +78,7 @@ validate_ip_address() {
 
 get_conf_var() {
 
-    RET=$(grep -E "^$1\s*=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr -d ' ')
+    RET=$(grep -E "^$1\s*=" $NUXEO_CONF | cut -d= -f2- | cut -d# -f1 | tr -d ' ' | tail -n 1)
 
 }
 
@@ -87,12 +87,16 @@ set_conf_var() {
     # Note: doesn't handle colon in key or value
     key=$1
     value=$2
-    has_key=$(grep -E "^#?$key\s*=" $NUXEO_CONF | wc -l)
-    if [ "$has_key" = "0" ]; then
-        echo "$key=$value" >> $NUXEO_CONF
-    else
-        perl -p -i -e "s:^#?$key\s*=.*$:$key=$value:g" $NUXEO_CONF
-    fi
+    del_conf_var $key
+    echo "$key=$value" >> $NUXEO_CONF
+
+}
+
+del_conf_var() {
+
+    # Note: doesn't handle colon in key
+    key=$1
+    perl -p -i -e "s:^#?$key\s*=(.*)$:#$key=\1:g" $NUXEO_CONF
 
 }
 
