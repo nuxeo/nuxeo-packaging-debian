@@ -261,9 +261,15 @@ fi
 
 # All done!
 
-echo "*** Migration complete ***"
-
 if [ "$DRY_RUN" = "true" ]; then
+    echo "*** Migration complete ***"
     echo "The migrated nuxeo.conf is in /tmp/nuxeo.conf.migrate"
+else
+    echo "**************************************************************"
+    echo "*                    Migration complete                      *"
+    echo "* Once you have validated that everything works as intended, *"
+    echo "* you should remove the now obsolete nuxeo-$PRODUCT package: *"
+    echo "* sudo apt-get purge nuxeo-$PRODUCT                          *"
+    echo "**************************************************************"
 fi
 
