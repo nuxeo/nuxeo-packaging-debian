@@ -325,6 +325,9 @@ upgrade_marketplace_packages() {
     # If we're still on the same nuxeo version, reactivate other connect packages
     get_conf_var nuxeo.installer.lastinstalledversion
     OLD_DEB_VERSION=$RET
+    if [ "$OLD_DEB_VERSION" = "" ]; then
+        OLD_DEB_VERSION="0"
+    fi
     NEW_NX_VERSION=$(echo $NEW_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
     OLD_NX_VERSION=$(echo $OLD_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
     dpkg --compare-versions $OLD_NX_VERSION eq $NEW_NX_VERSION
