@@ -90,7 +90,8 @@ Template: @package.name@/migratesingle
 Type: boolean
 Default: false
 _Description: Do you want to migrate from ${oldpkgname}?
- EXPERIMENTAL - BACKUP YOUR DATA !!!
+  Make sure you have a backup of your data and that nothing  
+  is accessing application resources before proceeding.
 
 Template: @package.name@/migratenotemultiple
 Type: note
@@ -117,7 +118,8 @@ Type: select
 __Choices: ${nomigration}, ${oldpkgnames}
 Default: ${nomigration}
 _Description: Which package do you want to migrate?
- EXPERIMENTAL - BACKUP YOUR DATA !!!
+  Make sure you have a backup of your data and that nothing  
+  is accessing application resources before proceeding.
 
 Template: @package.name@/migrate
 Type: boolean

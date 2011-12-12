@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: @package.fullversion@\n"
 "Report-Msgid-Bugs-To: @package.name@@packages.debian.org\n"
-"POT-Creation-Date: 2011-12-08 23:56+0100\n"
+"POT-Creation-Date: 2011-12-12 09:02+0100\n"
 "PO-Revision-Date: 2011-06-27 14:30+0200\n"
 "Last-Translator: Nuxeo Packagers <packagers@nuxeo.com>\n"
 "Language-Team: French <fr@li.org>\n"
@@ -220,7 +220,8 @@ msgstr ""
 #. Description
 #: ../templates:12001 ../templates:14001
 msgid " *** ANY DATA ALREADY PRESENT IN THE NEW PACKAGE WILL BE LOST ***"
-msgstr " *** LES DONNEES EJA PRESENTES DANS LE NOUVEAU PAQUET SERONT PERDUES ***"
+msgstr ""
+" *** LES DONNEES DEJA PRESENTES DANS LE NOUVEAU PAQUET SERONT PERDUES ***"
 
 #. Type: note
 #. Description
@@ -245,7 +246,8 @@ msgstr ""
 #. Description
 #: ../templates:12001 ../templates:14001
 msgid " This will *not* migrate any custom template you may have."
-msgstr " Cela *ne migrera pas* les templates personalisés que vous pourriez avoir."
+msgstr ""
+" Cela *ne migrera pas* les templates personalisés que vous pourriez avoir."
 
 #. Type: boolean
 #. Description
@@ -258,8 +260,13 @@ msgstr "Voulez vous effectuer la migration à partir de ${oldpkgname}?"
 #. Type: select
 #. Description
 #: ../templates:13001 ../templates:15002
-msgid "EXPERIMENTAL - BACKUP YOUR DATA !!!"
-msgstr "EXPERIMENTAL - SAUVEGARDEZ VOS DONNEES !!!"
+msgid ""
+" Make sure you have a backup of your data and that nothing\n"
+" is accessing application resources before proceeding."
+msgstr ""
+" Veuillez vous assurer que vous avec une sauvegarde de vos données\n"
+" et que rien d'autre n'accède aux ressources de votre application\n"
+" avant de continuer."
 
 #. Type: note
 #. Description
