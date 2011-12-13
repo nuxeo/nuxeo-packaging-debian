@@ -175,6 +175,17 @@ if [ "$MOVE_DATA_DIR" = "true" ]; then
             exit 1
         fi
     fi
+else
+    if [ "$DRY_RUN" = "true" ]; then
+        echo "Not changing ownership of @nuxeo.data.dir@: dry run"
+    else
+        chown -R @package.name.clean@:@package.name.clean@ "@nuxeo.data.dir@"
+        if [ "$?" != "0" ]; then
+            echo "Failed to grant ownership of @nuxeo.data.dir@ to the @package.name.clean@ user."
+            echo "Package(s) data may be in an inconsistent state."
+            exit 1
+        fi
+    fi
 fi
 
 # Replace things in the config file
