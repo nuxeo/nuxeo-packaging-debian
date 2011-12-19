@@ -263,6 +263,15 @@ upgrade_marketplace_packages() {
 
     # Reset to "downloaded"
     quietnuxeoctl mp-reset
+    # Remove the registry until NXP-8174 is resolved
+    get_conf_var nuxeo.data.dir
+    datadir=$RET
+    if [ -z "$datadir" ]; then
+        datadir=@nuxeo.data.dir@
+    fi
+    if [ -f "${datadir}/packages/registry.xml" ]; then
+        rm -f "${datadir}/packages/registry.xml"
+    fi
 
     # Remove marketplace base packages
     MPDISTLIST="nuxeo-content-browser nuxeo-content-browser-cmf nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-sc"
