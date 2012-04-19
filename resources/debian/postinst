@@ -262,7 +262,7 @@ upgrade_marketplace_packages() {
     fi
 
     # Reset to "downloaded"
-    quietnuxeoctl mp-reset
+    quietnuxeoctl mp-reset || true
     # Remove the registry until NXP-8174 is resolved
     get_conf_var nuxeo.data.dir
     datadir=$RET
