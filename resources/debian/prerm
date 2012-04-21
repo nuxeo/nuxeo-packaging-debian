@@ -27,7 +27,7 @@ case "$1" in
 
         # Save marketplace package states
         export NUXEO_CONF
-        su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list" | grep -v "^Nuxeo home:" | grep -v "Nuxeo configuration:" > @nuxeo.etc.dir@/pkglist.cache
+        su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list" | grep -v "^Nuxeo home:" | grep -v "Nuxeo configuration:" > @nuxeo.etc.dir@/pkglist.cache || true
         export -n NUXEO_CONF
 
     ;;
