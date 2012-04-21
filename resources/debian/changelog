@@ -1,4 +1,4 @@
-@package.name@ (@package.fullversion@) lucid; urgency=low
+@package.name@ (@package.fullversion@) precise; urgency=low
 
   * Tracked in SCM
     See http://hg.nuxeo.org/tools/nuxeo-packaging-debian
