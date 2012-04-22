@@ -235,58 +235,84 @@ activate_wizard() {
 
 }
 
-quietnuxeoctl() {
+nuxeoctl() {
 
     NXCTLPARAMS=$@
     export NUXEO_CONF
-    su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl --quiet $NXCTLPARAMS" | grep -v "^Nuxeo home:" | grep -v "Nuxeo configuration:" | grep -v -e "Template .* not found"
+    su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl $NXCTLPARAMS"
     export -n NUXEO_CONF
 
 }
 
 upgrade_marketplace_packages() {
 
-    NEW_DEB_VERSION=$1
+    OLD_DEB_VERSION=$1
+    NEW_DEB_VERSION=@package.fullversion@
+    if [ "$NEW_DEB_VERSION" = "" ]; then
+        NEW_DEB_VERSION="0"
+    fi
+    NEW_NX_VERSION=$(echo $NEW_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
+    OLD_NX_VERSION=$(echo $OLD_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
+
+    if dpkg --compare-versions "$OLD_NX_VERSION" lt "5.6"; then
+        echo "Upgrade from pre-5.6 version."
+        # The old prerm script wasn't working correctly
+        # Stop the server and do a mp-list again
+        echo "Ensure server is stopped..."
+        nuxeoctl --quiet stop || true
+        nuxeoctl mp-list | grep -i -E "^(started|starting|downloaded)" > @nuxeo.etc.dir@/pkglist.cache
+        # Reset to "downloaded"
+        nuxeoctl mp-reset || true
+        # Remove the registry until NXP-8174 is resolved
+        get_conf_var nuxeo.data.dir
+        datadir=$RET
+        if [ -z "$datadir" ]; then
+            datadir=@nuxeo.data.dir@
+        fi
+        rm -f "${datadir}/packages/registry.xml"
+        rm -f "${datadir}/packages/store/*/uninstall.xml"
+        rm -rf "${datadir}/packages/backup"
+    fi
 
     # Lookup saved package states
     declare -A MPSTATES
     declare -A MPIDS
     if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
-        mpregex='(started|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
+        mpregex='(started|starting|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
         while read -r line; do
-            if [[ $line =~ $mpregex ]]; then
-                MPSTATES[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
-                MPIDS[${BASH_REMATCH[2]}]=${BASH_REMATCH[3]}
+            if [[ $line =~ cmf ]]; then
+                if [ "${BASH_REMATCH[1]}" = "started" ] || [ "${BASH_REMATCH[1]}" = "starting" ]; then
+                    echo "##########################################"
+                    echo "# The upgrade script doesn't handle CMF  #"
+                    echo "# You will need to reinstall it manually #"
+                    echo "##########################################"
+                fi
+            else
+                if [[ $line =~ $mpregex ]]; then
+                    MPSTATES[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
+                    MPIDS[${BASH_REMATCH[2]}]=${BASH_REMATCH[3]}
+                fi
             fi
         done < @nuxeo.etc.dir@/pkglist.cache
     fi
 
-    # Reset to "downloaded"
-    quietnuxeoctl mp-reset || true
-    # Remove the registry until NXP-8174 is resolved
-    get_conf_var nuxeo.data.dir
-    datadir=$RET
-    if [ -z "$datadir" ]; then
-        datadir=@nuxeo.data.dir@
-    fi
-    if [ -f "${datadir}/packages/registry.xml" ]; then
-        rm -f "${datadir}/packages/registry.xml"
-    fi
-
     # Remove marketplace base packages
-    MPDISTLIST="nuxeo-content-browser nuxeo-content-browser-cmf nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-sc"
+    MPDISTLIST="nuxeo-content-browser nuxeo-dm nuxeo-dam nuxeo-sc"
     for distPkg in $MPDISTLIST; do
         MPREVLIST="$distPkg $MPREVLIST"
     done
     echo "*** Removing old base marketplace packages ***"
     PKGTOREMOVE=""
     for distPkg in $MPREVLIST; do
+        if [ "$distPkg" = "nuxeo-sc" ]; then
+            distPkg="nuxeo-social-collaboration"
+        fi
         if [ -n "${MPSTATES[$distPkg]}" ]; then
             PKGTOREMOVE="$PKGTOREMOVE ${MPIDS[$distPkg]}"
         fi
     done
     if [ -n "$PKGTOREMOVE" ]; then
-        quietnuxeoctl mp-remove $PKGTOREMOVE
+        nuxeoctl mp-remove $PKGTOREMOVE | grep -i -E "^Removing" || true
     fi
 
     # Install new versions of the base marketplace packages in the same state as the old one
@@ -299,6 +325,9 @@ upgrade_marketplace_packages() {
     for distPkg in $MPDISTLIST; do
         MD5=$(cat $WIZPKGDIR/packages.xml | awk "/id=\"$distPkg\"/,/\/>/" | grep -oE 'md5="([^"]*)"' | sed -E 's/md5="(.*)"/\1/') || MD5=""
         if [ -f "$WIZPKGDIR/$MD5" ]; then
+            if [ "$distPkg" = "nuxeo-sc" ]; then
+                distPkg="nuxeo-social-collaboration"
+            fi
             if [ "${MPSTATES[$distPkg]}" = "started" ]; then
                 PKGTOINSTALL="$PKGTOINSTALL $WIZPKGDIR/$MD5"
                 if [ -n "$MPSELECTION" ]; then
@@ -318,11 +347,11 @@ upgrade_marketplace_packages() {
         fi
     done
     if [ -n "$PKGTOADD" ]; then
-        echo "Adding (but not activating) $NAMESTOADD"
-        quietnuxeoctl mp-add $PKGTOADD
+        echo "Adding (but not activating) $NAMESTOADD :"
+        nuxeoctl mp-add $PKGTOADD | grep -i -E "^Adding" || true
     fi
     if [ -n "$PKGTOINSTALL" ]; then
-        quietnuxeoctl mp-install $PKGTOINSTALL
+        nuxeoctl mp-install $PKGTOINSTALL | grep -i -E "^Installing" || true
     fi
 
     # Save current selection as wizard preselects
@@ -332,16 +361,7 @@ upgrade_marketplace_packages() {
     echo "$MPSELECTION" >> $SELECTIONFILE
 
     # If we're still on the same nuxeo version, reactivate other connect packages
-    get_conf_var nuxeo.installer.lastinstalledversion
-    OLD_DEB_VERSION=$RET
-    if [ "$OLD_DEB_VERSION" = "" ]; then
-        OLD_DEB_VERSION="0"
-    fi
-    NEW_NX_VERSION=$(echo $NEW_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
-    OLD_NX_VERSION=$(echo $OLD_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
-    dpkg --compare-versions $OLD_NX_VERSION eq $NEW_NX_VERSION
-    SAME_NX_VERSION=$?
-    if [ "$SAME_NX_VERSION" = "0" ]; then
+    if dpkg --compare-versions "$OLD_NX_VERSION" eq "$NEW_NX_VERSION"; then
         echo "*** Reactivating connect packages (same Nuxeo version) ***"
         PKGTOINSTALL=""
         NAMESTOINSTALL=""
@@ -351,6 +371,9 @@ upgrade_marketplace_packages() {
             fi
             IS_DIST_PACKAGE=false
             for distPkg in $MPDISTLIST; do
+                if [ "$distPkg" = "nuxeo-sc" ]; then
+                    distPkg="nuxeo-social-collaboration"
+                fi
                 if [ "$pkg" = "$distPkg" ]; then
                     # Base marketplace packages are already handled
                     IS_DIST_PACKAGE=true
@@ -363,7 +386,7 @@ upgrade_marketplace_packages() {
         done
         if [ -n "$PKGTOINSTALL" ]; then
             echo "Trying to reactivate: $NAMESTOINSTALL"
-            quietnuxeoctl mp-install $PKGTOINSTALL
+            nuxeoctl mp-install $PKGTOINSTALL | grep -i -E "^Installing" || true
         else
             echo "Nothing to do."
         fi

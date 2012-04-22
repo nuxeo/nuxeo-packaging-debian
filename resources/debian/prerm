@@ -14,6 +14,7 @@ db_version 2.0
 
 . /usr/lib/@package.name@/internal/pkg-helper-functions
 
+#DEBHELPER#
 
 case "$1" in
 
@@ -27,7 +28,17 @@ case "$1" in
 
         # Save marketplace package states
         export NUXEO_CONF
-        su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl --quiet mp-list" | grep -v "^Nuxeo home:" | grep -v "Nuxeo configuration:" > @nuxeo.etc.dir@/pkglist.cache || true
+        su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl mp-list" | grep -i -E "^(started|starting|downloaded)" > @nuxeo.etc.dir@/pkglist.cache || true
+        # Uninstall packages
+        if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
+            mpregex='(started|starting)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
+            while read -r line; do
+                if [[ $line =~ $mpregex ]]; then
+                    MPID=${BASH_REMATCH[3]}
+                    su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl mp-uninstall $MPID" | grep -E "^Uninstalling" || true
+                fi
+            done < @nuxeo.etc.dir@/pkglist.cache
+        fi
         export -n NUXEO_CONF
 
     ;;
@@ -42,4 +53,3 @@ case "$1" in
 
 esac
 
-#DEBHELPER#
