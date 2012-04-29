@@ -178,9 +178,14 @@ configure_nuxeo() {
     set_conf_var nuxeo.server.http.port $RET
     db_get @package.name@/ajp-port
     set_conf_var nuxeo.server.ajp.port $RET
-    # randomize nuxeo.server.tomcat-admin.port if not set
-    get_conf_var nuxeo.server.tomcat-admin.port
+    # randomize nuxeo.server.tomcat_admin.port if not set
+    get_conf_var nuxeo.server.tomcat_admin.port
     adminport=$RET
+    if [ -z "$adminport" ]; then
+        # check old key
+        get_conf_var nuxeo.server.tomcat-admin.port
+        adminport=$RET
+    fi
     if [ -z "$adminport" ]; then
         validated=false
         while [ $validated = false ]; do
@@ -189,7 +194,7 @@ configure_nuxeo() {
             validated=$RET
         done
     fi
-    set_conf_var nuxeo.server.tomcat-admin.port $adminport
+    set_conf_var nuxeo.server.tomcat_admin.port $adminport
 
     db_get @package.name@/database
     dbchoice=$RET
