@@ -343,7 +343,7 @@ upgrade_marketplace_packages() {
         done
         if [ -n "$PKGTOINSTALL" ]; then
             echo "Trying to reactivate: $NAMESTOINSTALL"
-            nuxeoctl mp-install $PKGTOINSTALL | grep -i -E "^Installing" || true
+            nuxeoctl mp-install --accept=true --relax=true $PKGTOINSTALL | grep -i -E "^Installing" || true
         else
             echo "Nothing to do."
         fi
