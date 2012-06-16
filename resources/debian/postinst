@@ -296,7 +296,7 @@ upgrade_marketplace_packages() {
         MPREVLIST="$distPkg $MPREVLIST"
     done
     echo "*** Removing old base packages ***"
-    nuxeoctl mp-remove $MPDISTLIST | grep -i -E "^Removing" || true
+    nuxeoctl mp-remove --accept=true --relax=true $MPDISTLIST | grep -i -E "^Removing" || true
 
     # Install new versions of the base packages in the same state as the old one
     echo "*** Updating base packages ***"
