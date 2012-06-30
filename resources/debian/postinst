@@ -265,14 +265,17 @@ upgrade_marketplace_packages() {
         # Stop the server and do a mp-list again
         echo "Ensure server is stopped..."
         nuxeoctl --quiet stop || true
-        nuxeoctl mp-list | grep -i -E "^(started|starting|downloaded)" > @nuxeo.etc.dir@/pkglist.cache
+        nuxeoctl mp-list | grep -i -E "^(started|starting|installing|downloaded)" > @nuxeo.etc.dir@/pkglist.cache
     fi
+
+    # Reset package states in case something went wrong with the former package's prerm
+    nuxeoctl --quiet --accept=yes mp-reset || true
 
     # Lookup saved package states
     declare -A MPSTATES
     declare -A MPIDS
     if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
-        mpregex='(started|starting|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
+        mpregex='(started|starting|installing|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
         while read -r line; do
             if [[ $line =~ cmf ]]; then
                 if [ "${BASH_REMATCH[1]}" = "started" ] || [ "${BASH_REMATCH[1]}" = "starting" ]; then

@@ -28,7 +28,7 @@ case "$1" in
 
         # Save marketplace package states
         export NUXEO_CONF
-        su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl mp-list" | grep -i -E "^(started|starting|downloaded)" > @nuxeo.etc.dir@/pkglist.cache || true
+        su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl mp-list" | grep -i -E "^(started|starting|installing|downloaded)" > @nuxeo.etc.dir@/pkglist.cache || true
         # Uninstall packages
         if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
             mpregex='(started|starting)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
