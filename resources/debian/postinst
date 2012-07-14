@@ -261,21 +261,32 @@ upgrade_marketplace_packages() {
 
     if dpkg --compare-versions "$OLD_NX_VERSION" lt "5.6"; then
         echo "Upgrade from pre-5.6 version."
+        # Update deprecated parameters
+        perl -p -i -e "s/nuxeo.db.user.separator.key/nuxeo.db.user_separator_key/g" $NUXEO_CONF
+        perl -p -i -e "s/nuxeo.server.tomcat-admin.port/nuxeo.server.tomcat_admin.port/g" $NUXEO_CONF
+        perl -p -i -e "s/mail.pop3.host/mail.store.host/g" $NUXEO_CONF
+        perl -p -i -e "s/mail.pop3.port/mail.store.port/g" $NUXEO_CONF
+        perl -p -i -e "s/mail.smtp.host/mail.transport.host/g" $NUXEO_CONF
+        perl -p -i -e "s/mail.smtp.port/mail.transport.port/g" $NUXEO_CONF
+        perl -p -i -e "s/mail.smtp.username/mail.transport.username/g" $NUXEO_CONF
+        perl -p -i -e "s/mail.smtp.password/mail.transport.password/g" $NUXEO_CONF
+        perl -p -i -e "s/mail.smtp.usetls/mail.transport.usetls/g" $NUXEO_CONF
+        perl -p -i -e "s/mail.smtp.auth/mail.transport.auth/g" $NUXEO_CONF
         # The old prerm script wasn't working correctly
         # Stop the server and do a mp-list again
-        echo "Ensure server is stopped..."
+        echo "Ensuring server is stopped..."
         nuxeoctl --quiet stop || true
-        nuxeoctl mp-list | grep -i -E "^(started|starting|installing|downloaded)" > @nuxeo.etc.dir@/pkglist.cache
+        nuxeoctl mp-list | grep -i -E "(started|starting|installing|downloaded)" > @nuxeo.etc.dir@/pkglist.cache || true
     fi
 
     # Reset package states in case something went wrong with the former package's prerm
-    nuxeoctl --quiet --accept=yes mp-reset || true
+    nuxeoctl --quiet --accept=true mp-reset || true
 
     # Lookup saved package states
     declare -A MPSTATES
     declare -A MPIDS
     if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
-        mpregex='(started|starting|installing|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
+        mpregex='.*(started|starting|installing|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
         while read -r line; do
             if [[ $line =~ cmf ]]; then
                 if [ "${BASH_REMATCH[1]}" = "started" ] || [ "${BASH_REMATCH[1]}" = "starting" ]; then
