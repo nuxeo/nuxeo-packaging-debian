@@ -34,8 +34,8 @@ case "$1" in
             mpregex='.*(started|starting)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
             while read -r line; do
                 if [[ $line =~ $mpregex ]]; then
-                    MPID=${BASH_REMATCH[3]}
-                    su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl mp-uninstall $MPID" | grep -E "^Uninstalling" || true
+                    MPNAME=${BASH_REMATCH[2]}
+                    su @package.name.clean@ -m -c "@nuxeo.home.dir@/bin/nuxeoctl mp-uninstall $MPNAME" | grep -E "^Uninstalling" || true
                 fi
             done < @nuxeo.etc.dir@/pkglist.cache
         fi
