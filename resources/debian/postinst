@@ -318,8 +318,18 @@ upgrade_marketplace_packages() {
     PKGTOINSTALL=""
     nuxeoctl mp-init | grep -i -E "^Adding" || true
     for distPkg in $MPDISTLIST; do
+        # Ignore nuxeo-content-browser
         if [ "$distPkg" = "nuxeo-content-browser" ]; then
             continue
+        fi
+        # Don't try to install CMF on 5.6: not compatible
+        if [ "$distPkg" = "nuxeo-cmf" ]; then
+            if dpkg --compare-versions "$NEW_NX_VERSION" ge "5.6"; then
+                if dpkg --compare-versions "$NEW_NX_VERSION" lt "5.7"; then
+                    echo "Ignoring nuxeo-cmf: not compatible with 5.6"
+                    continue
+                fi
+            fi
         fi
         if [ "${MPSTATES[$distPkg]}" = "started" ]; then
             PKGTOINSTALL="$PKGTOINSTALL $distPkg"
