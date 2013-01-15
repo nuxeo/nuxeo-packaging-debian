@@ -32,34 +32,34 @@ case "$1" in
   start)
         log_daemon_msg "Starting" "$DESC\n"
         create_pid_dir
-        su $NUXEO_USER -m -c "$NUXEOCTL --quiet startbg"
+        su $NUXEO_USER -c "$NUXEOCTL --quiet startbg"
         ES=$?
         log_end_msg $ES
         ;;
   stop)
         log_daemon_msg "Stopping" "$DESC\n"
-        su $NUXEO_USER -m -c "$NUXEOCTL --quiet stop"
+        su $NUXEO_USER -c "$NUXEOCTL --quiet stop"
         ES=$?
         log_end_msg $ES
         ;;
   restart)
         create_pid_dir
-        su $NUXEO_USER -m -c "$NUXEOCTL --quiet restart"
+        su $NUXEO_USER -c "$NUXEOCTL --quiet restart"
         ES=$?
         log_end_msg $ES
         ;;
   force-reload)
         create_pid_dir
-        su $NUXEO_USER -m -c "$NUXEOCTL --quiet restart"
+        su $NUXEO_USER -c "$NUXEOCTL --quiet restart"
         ES=$?
         log_end_msg $ES
         ;;
   status)
-        su $NUXEO_USER -m -c "$NUXEOCTL --quiet status"
+        su $NUXEO_USER -c "$NUXEOCTL --quiet status"
         exit $?
         ;;
   showconf)
-        su $NUXEO_USER -m -c "$NUXEOCTL --xml showconf"
+        su $NUXEO_USER -c "$NUXEOCTL --xml showconf"
         exit $?
         ;;
   *)
