@@ -21,6 +21,7 @@ configure_paths() {
     chown -R @package.name.clean@:@package.name.clean@ @nuxeo.data.dir@
     chown -R @package.name.clean@:@package.name.clean@ @nuxeo.etc.dir@
     chown -R @package.name.clean@:@package.name.clean@ @nuxeo.log.dir@
+    mkdir -p @nuxeo.pid.dir@
     chown -R @package.name.clean@:@package.name.clean@ @nuxeo.pid.dir@
 
 }
