@@ -137,7 +137,7 @@
                        input="${package.version}"
                        regexp="([0-9\.]+)-(.*)"
                        select="\2"
-                       defaultValue="01" />
+                       defaultValue="${package.revision}" />
         <!-- Print results -->
         <echo message="*** Version settings ***" />
         <echo message="Distribution version: ${distribution.version}" />
