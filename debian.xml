@@ -131,12 +131,13 @@
         <!-- Versions in debian parlance -->
         <propertyregex property="debian.version"
                        input="${package.version}"
-                       regexp="([0-9\.]+)-.*"
+                       regexp="([0-9\.]+)(-.*)?"
                        select="\1" />
         <propertyregex property="debian.revision"
                        input="${package.version}"
                        regexp="([0-9\.]+)-(.*)"
-                       select="\2" />
+                       select="\2"
+                       defaultValue="01" />
         <!-- Print results -->
         <echo message="*** Version settings ***" />
         <echo message="Distribution version: ${distribution.version}" />
