@@ -118,6 +118,25 @@
                 </if>
             </then>
         </if>
+        <!-- Check whether we have a fasttrack -->
+        <if>
+            <not>
+                <isset property="package.type" />
+            </not>
+            <then>
+                <propertyregex property="package.fasttrack.version"
+                               input="${distribution.version}"
+                               regexp="([0-9]{1}\.[0-9]{1}\.[0-9]{1})"
+                               select="\1" />
+                <if>
+                    <isset property="package.fasttrack.version" />
+                    <then>
+                        <property name="package.version" value="${package.fasttrack.version}" />
+                        <property name="package.type" value="fasttracks" />
+                    </then>
+                </if>
+            </then>
+        </if>
         <!-- None of the above? We have a release! -->
         <if>
             <not>
