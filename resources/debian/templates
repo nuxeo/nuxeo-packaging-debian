@@ -31,7 +31,7 @@ Template: @package.name@/bind-address
 Type: string
 Default: 0.0.0.0
 _Description: Bind address:
- IP address you would you the server
+ IP address you would like the server
  to listen on.
 
 Template: @package.name@/http-port
