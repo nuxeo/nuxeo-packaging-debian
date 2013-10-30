@@ -306,7 +306,7 @@ upgrade_marketplace_packages() {
     fi
 
     # Remove base packages
-    MPDISTLIST="nuxeo-content-browser nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-social-collaboration"
+    MPDISTLIST="nuxeo-content-browser nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-social-collaboration nuxeo-rest-api"
     for distPkg in $MPDISTLIST; do
         MPREVLIST="$distPkg $MPREVLIST"
     done
