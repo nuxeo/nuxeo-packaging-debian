@@ -332,6 +332,12 @@ upgrade_marketplace_packages() {
                 fi
             fi
         fi
+        # Don't try to install REST API on 5.9.3+: included in CAP
+        if [ "$distPkg" = "nuxeo-rest-api" ]; then
+            if dpkg --compare-versions "$NEW_NX_VERSION" ge "5.9.3"; then
+                continue
+            fi
+        fi
         if [ "${MPSTATES[$distPkg]}" = "started" ]; then
             PKGTOINSTALL="$PKGTOINSTALL $distPkg"
             if [ -n "$MPSELECTION" ]; then
