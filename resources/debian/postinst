@@ -260,6 +260,15 @@ upgrade_marketplace_packages() {
     NEW_NX_VERSION=$(echo $NEW_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
     OLD_NX_VERSION=$(echo $OLD_DEB_VERSION | sed -E 's/^(.*)-.*/\1/')
 
+    # Package directory move with 5.9.4
+    if dpkg --compare-versions "$OLD_NX_VERSION" lt "5.9.4"; then
+        if dpkg --compare-versions "$NEW_NX_VERSION" ge "5.9.4"; then
+            if [ -d @nuxeo.data.dir@/packages ]; then
+                mv @nuxeo.data.dir@/packages @nuxeo.home.dir@/packages
+            fi
+        fi
+    fi
+
     if dpkg --compare-versions "$OLD_NX_VERSION" lt "5.6"; then
         echo "Upgrade from pre-5.6 version."
         # Update deprecated parameters
