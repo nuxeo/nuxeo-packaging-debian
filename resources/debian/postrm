@@ -59,18 +59,20 @@ cleanup_nuxeo_cluster() {
         if [ "$num" = "1" ]; then
             # drop cluster
             pg_dropcluster --stop $pgversion $PGCLUSTER
-            # do shmmax deconfiguration
-            currentmax=$(grep -E "^kernel.shmmax\s*=" /etc/sysctl.conf | cut -d= -f2 | tr -d ' ')
-            beforemax=$(grep -E "^# Before nuxeo install: shmmax =" /etc/sysctl.conf | cut -d= -f2 | tr -d ' ')
-            aftermax=$(grep -E "^# After nuxeo install: shmmax =" /etc/sysctl.conf | cut -d= -f2 | tr -d ' ')
-            # don't do anything if the values were modified by the user
-            if [ ! -z "$beforemax" ] && [ ! -z "$aftermax" ]; then
-                if [ "$currentmax" = "$aftermax" ]; then
-                    perl -n -i -e "print unless /^# Do not remove those lines \(needed by Nuxeo removal scripts\):/" /etc/sysctl.conf
-                    perl -n -i -e "print unless /^# Before nuxeo install: shmmax =/" /etc/sysctl.conf
-                    perl -n -i -e "print unless /^# After nuxeo install: shmmax =/" /etc/sysctl.conf
-                    perl -p -i -e "s/^kernel.shmmax\s*=.*$/kernel.shmmax = $beforemax/" /etc/sysctl.conf
-                    sysctl -w kernel.shmmax=$beforemax
+            # do shmmax deconfiguration for postgresql < 9.3
+            if dpkg --compare-versions "$pgversion" lt "9.3"; then
+                currentmax=$(grep -E "^kernel.shmmax\s*=" /etc/sysctl.conf | cut -d= -f2 | tr -d ' ')
+                beforemax=$(grep -E "^# Before nuxeo install: shmmax =" /etc/sysctl.conf | cut -d= -f2 | tr -d ' ')
+                aftermax=$(grep -E "^# After nuxeo install: shmmax =" /etc/sysctl.conf | cut -d= -f2 | tr -d ' ')
+                # don't do anything if the values were modified by the user
+                if [ ! -z "$beforemax" ] && [ ! -z "$aftermax" ]; then
+                    if [ "$currentmax" = "$aftermax" ]; then
+                        perl -n -i -e "print unless /^# Do not remove those lines \(needed by Nuxeo removal scripts\):/" /etc/sysctl.conf
+                        perl -n -i -e "print unless /^# Before nuxeo install: shmmax =/" /etc/sysctl.conf
+                        perl -n -i -e "print unless /^# After nuxeo install: shmmax =/" /etc/sysctl.conf
+                        perl -p -i -e "s/^kernel.shmmax\s*=.*$/kernel.shmmax = $beforemax/" /etc/sysctl.conf
+                        sysctl -w kernel.shmmax=$beforemax
+                    fi
                 fi
             fi
         # There are still other users in the database
