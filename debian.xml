@@ -252,6 +252,22 @@
                 <include name="**" />
             </dirset>
         </chmod>
+        <copy todir="${out.dir}/${package.name}-${debian.version}/static_bin">
+            <fileset dir="${maven.basedir}/resources/static_bin">
+                <include name="**" />
+            </fileset>
+            <filterset refid="nxvars" />
+        </copy>
+        <chmod perm="0755">
+            <fileset dir="${out.dir}/${package.name}-${debian.version}/static_bin">
+                <include name="**" />
+            </fileset>
+        </chmod>
+        <chmod perm="0755">
+             <dirset dir="${out.dir}/${package.name}-${debian.version}/static_bin">
+                <include name="**" />
+            </dirset>
+        </chmod>
         <if>
             <not>
                 <equals arg1="nuxeo" arg2="${package.name}" />

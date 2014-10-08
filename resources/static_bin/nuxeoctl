@@ -1,0 +1,18 @@
+#!/bin/bash
+
+export NUXEO_CONF=${NUXEO_CONF:-"@nuxeo.etc.dir@/nuxeo.conf"}
+
+COMMAND="@nuxeo.home.dir@/bin/nuxeoctl $@"
+
+if [ "$UID" = "0" ]; then
+    ulimit -n 4096
+    su @package.name.clean@ -c "$COMMAND"
+elif [ "$USER" = "@package.name.clean@" ]; then
+    $COMMAND
+else
+    echo "This can only be executed by root or @package.name.clean@"
+    exit 1
+fi
+
+exit $?
+

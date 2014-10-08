@@ -11,3 +11,6 @@ cp -a distribution/* debian/@package.name@/${nxhome}/
 mkdir -p debian/@package.name@/usr/lib/@package.name@/
 cp -a static_lib/* debian/@package.name@/usr/lib/@package.name@/
 
+mkdir -p debian/@package.name@/usr/bin
+cp -a static_bin/nuxeoctl debian/@package.name@/usr/bin/
+
