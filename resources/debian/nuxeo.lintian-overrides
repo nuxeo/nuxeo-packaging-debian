@@ -11,3 +11,8 @@
 # In the meantime, ignore related lintian warnings
 @package.name@ binary: extra-license-file
 
+# Changelog is bogus, we don't care about the day
+@package.name@ binary: debian-changelog-has-wrong-weekday
+
+# daemon.sh is only provided as an example
+@package.name@ binary: script-not-executable

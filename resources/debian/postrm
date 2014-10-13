@@ -22,7 +22,7 @@ PGDEFAULTVERSION="8.4"
 
 delete_user() {
     if getent passwd @package.name.clean@  >/dev/null; then
-        echo "*** Removing user @package.name.clean@ ***"
+        echo " * Removing user @package.name.clean@"
         delusercmd=$(which deluser)
         if [ -n "$delusercmd" ] && [ -x $delusercmd ]; then
             deluser @package.name.clean@
@@ -42,7 +42,7 @@ cleanup_nuxeo_cluster() {
     pushd /tmp > /dev/null
     nxcluster=$(pg_lsclusters -h | grep $PGCLUSTER) || true
     if [ ! -z "$nxcluster" ]; then
-        echo "*** Removing database dedicated to @package.name.clean@ ***"
+        echo " * Removing database dedicated to @package.name.clean@"
         pgversion=$(echo $nxcluster | awk '{print $1}')
         pgport=$(echo $nxcluster | awk '{print $3}')
         pgstatus=$(echo $nxcluster | awk '{print $4}')

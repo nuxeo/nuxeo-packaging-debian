@@ -39,7 +39,7 @@ setup_postgresql() {
     set_conf_var nuxeo.installer.installedpg true
     db_set @package.name@/installedpg true
 
-    echo "*** Creating a dedicated database for @package.name@ ***"
+    echo " * Creating a dedicated database for @package.name@"
 
     # Change to /tmp to avoid 'could not change directory to "/root"' messages
     pushd /tmp > /dev/null
@@ -294,106 +294,122 @@ upgrade_marketplace_packages() {
     # Reset package states in case something went wrong with the former package's prerm
     nuxeoctl --quiet --accept=true mp-reset || true
 
-    # Lookup saved package states
-    declare -A MPSTATES
-    declare -A MPIDS
-    if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
-        mpregex='.*(started|starting|installing|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
-        while read -r line; do
-            if [[ $line =~ cmf ]]; then
-                if [ "${BASH_REMATCH[1]}" = "started" ] || [ "${BASH_REMATCH[1]}" = "starting" ]; then
-                    echo "##########################################"
-                    echo "# The upgrade script doesn't handle CMF  #"
-                    echo "# You will need to reinstall it manually #"
-                    echo "##########################################"
+
+    if dpkg --compare-versions "$NEW_NX_VERSION" gt "5.9.5"; then
+
+        nuxeoctl --quiet mp-init
+        if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
+            oldpkglist=$(cat @nuxeo.etc.dir@/pkglist.cache | grep -v -- '-HF' | grep -i -E "(started|starting|installing)" | awk '{print $3}' | tr '\n' ' ')
+            if [ -n "$oldpkglist" ]; then
+                echo " * Trying to reinstall previously installed packages"
+                nuxeoctl mp-set --relax=false --accept=true --ignore-missing $oldpkglist
+            fi
+        fi
+
+    else # old method
+
+        # Lookup saved package states
+        declare -A MPSTATES
+        declare -A MPIDS
+        if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
+            mpregex='.*(started|starting|installing|downloaded)[[:space:]](.*)[[:space:]]\(id: (.*)\)'
+            while read -r line; do
+                if [[ $line =~ cmf ]]; then
+                    if [ "${BASH_REMATCH[1]}" = "started" ] || [ "${BASH_REMATCH[1]}" = "starting" ]; then
+                        echo "##########################################"
+                        echo "# The upgrade script doesn't handle CMF  #"
+                        echo "# You will need to reinstall it manually #"
+                        echo "##########################################"
+                    fi
+                else
+                    if [[ $line =~ $mpregex ]]; then
+                        MPSTATES[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
+                        MPIDS[${BASH_REMATCH[2]}]=${BASH_REMATCH[3]}
+                    fi
                 fi
-            else
-                if [[ $line =~ $mpregex ]]; then
-                    MPSTATES[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
-                    MPIDS[${BASH_REMATCH[2]}]=${BASH_REMATCH[3]}
+            done < @nuxeo.etc.dir@/pkglist.cache
+        fi
+
+        # Remove base packages
+        MPDISTLIST="nuxeo-content-browser nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-social-collaboration nuxeo-rest-api"
+        for distPkg in $MPDISTLIST; do
+            MPREVLIST="$distPkg $MPREVLIST"
+        done
+        echo " * Removing old base packages"
+        nuxeoctl mp-remove --accept=true --relax=true $MPDISTLIST | grep -i -E "^Removing" || true
+
+        # Install new versions of the base packages in the same state as the old one
+        echo " * Updating base packages"
+        MPSELECTION=""
+        PKGTOINSTALL=""
+        nuxeoctl mp-init | grep -i -E "^Adding" || true
+        for distPkg in $MPDISTLIST; do
+            # Ignore nuxeo-content-browser
+            if [ "$distPkg" = "nuxeo-content-browser" ]; then
+                continue
+            fi
+            # Don't try to install CMF on 5.6: not compatible
+            if [ "$distPkg" = "nuxeo-cmf" ]; then
+                if dpkg --compare-versions "$NEW_NX_VERSION" ge "5.6"; then
+                    if dpkg --compare-versions "$NEW_NX_VERSION" lt "5.7"; then
+                        echo "Ignoring nuxeo-cmf: not compatible with 5.6"
+                        continue
+                    fi
                 fi
             fi
-        done < @nuxeo.etc.dir@/pkglist.cache
-    fi
-
-    # Remove base packages
-    MPDISTLIST="nuxeo-content-browser nuxeo-dm nuxeo-dam nuxeo-cmf nuxeo-social-collaboration nuxeo-rest-api"
-    for distPkg in $MPDISTLIST; do
-        MPREVLIST="$distPkg $MPREVLIST"
-    done
-    echo "*** Removing old base packages ***"
-    nuxeoctl mp-remove --accept=true --relax=true $MPDISTLIST | grep -i -E "^Removing" || true
-
-    # Install new versions of the base packages in the same state as the old one
-    echo "*** Updating base packages ***"
-    MPSELECTION=""
-    PKGTOINSTALL=""
-    nuxeoctl mp-init | grep -i -E "^Adding" || true
-    for distPkg in $MPDISTLIST; do
-        # Ignore nuxeo-content-browser
-        if [ "$distPkg" = "nuxeo-content-browser" ]; then
-            continue
-        fi
-        # Don't try to install CMF on 5.6: not compatible
-        if [ "$distPkg" = "nuxeo-cmf" ]; then
-            if dpkg --compare-versions "$NEW_NX_VERSION" ge "5.6"; then
-                if dpkg --compare-versions "$NEW_NX_VERSION" lt "5.7"; then
-                    echo "Ignoring nuxeo-cmf: not compatible with 5.6"
+            # Don't try to install REST API on 5.9.3+: included in CAP
+            if [ "$distPkg" = "nuxeo-rest-api" ]; then
+                if dpkg --compare-versions "$NEW_NX_VERSION" ge "5.9.3"; then
                     continue
                 fi
             fi
-        fi
-        # Don't try to install REST API on 5.9.3+: included in CAP
-        if [ "$distPkg" = "nuxeo-rest-api" ]; then
-            if dpkg --compare-versions "$NEW_NX_VERSION" ge "5.9.3"; then
-                continue
-            fi
-        fi
-        if [ "${MPSTATES[$distPkg]}" = "started" ]; then
-            PKGTOINSTALL="$PKGTOINSTALL $distPkg"
-            if [ -n "$MPSELECTION" ]; then
-                MPSELECTION="$MPSELECTION,$distPkg"
-            else
-                MPSELECTION="packages=$distPkg"
-            fi
-        fi
-    done
-    if [ -n "$PKGTOINSTALL" ]; then
-        nuxeoctl mp-install $PKGTOINSTALL | grep -i -E "^Installing" || true
-    fi
-
-    # If we're still on the same nuxeo version, reactivate other connect packages
-    if dpkg --compare-versions "$OLD_NX_VERSION" eq "$NEW_NX_VERSION"; then
-        echo "*** Reactivating connect packages (same Nuxeo version) ***"
-        PKGTOINSTALL=""
-        NAMESTOINSTALL=""
-        for pkg in ${!MPIDS[@]}; do
-            if [ "${MPSTATES[$pkg]}" != "started" ]; then
-                continue
-            fi
-            IS_DIST_PACKAGE=false
-            for distPkg in $MPDISTLIST; do
-                if [ "$pkg" = "$distPkg" ]; then
-                    # Base packages are already handled
-                    IS_DIST_PACKAGE=true
+            if [ "${MPSTATES[$distPkg]}" = "started" ]; then
+                PKGTOINSTALL="$PKGTOINSTALL $distPkg"
+                if [ -n "$MPSELECTION" ]; then
+                    MPSELECTION="$MPSELECTION,$distPkg"
+                else
+                    MPSELECTION="packages=$distPkg"
                 fi
-            done
-            if [ "$IS_DIST_PACKAGE" = "false" ]; then
-                PKGTOINSTALL="$PKGTOINSTALL ${MPIDS[$pkg]}"
-                NAMESTOINSTALL="$NAMESTOINSTALL $pkg"
             fi
         done
         if [ -n "$PKGTOINSTALL" ]; then
-            echo "Trying to reactivate: $NAMESTOINSTALL"
-            nuxeoctl mp-install --accept=true --relax=true $PKGTOINSTALL | grep -i -E "^Installing" || true
-        else
-            echo "Nothing to do."
+            nuxeoctl mp-install $PKGTOINSTALL | grep -i -E "^Installing" || true
         fi
-    fi
 
-    # Check for upgrades
-    echo "*** Checking for package upgrades ***"
-    nuxeoctl mp-upgrade | grep -i -E "^(Uninstalling|Installing)" || true
+        # If we're still on the same nuxeo version, reactivate other connect packages
+        if dpkg --compare-versions "$OLD_NX_VERSION" eq "$NEW_NX_VERSION"; then
+            echo " * Reactivating connect packages (same Nuxeo version)"
+            PKGTOINSTALL=""
+            NAMESTOINSTALL=""
+            for pkg in ${!MPIDS[@]}; do
+                if [ "${MPSTATES[$pkg]}" != "started" ]; then
+                    continue
+                fi
+                IS_DIST_PACKAGE=false
+                for distPkg in $MPDISTLIST; do
+                    if [ "$pkg" = "$distPkg" ]; then
+                        # Base packages are already handled
+                        IS_DIST_PACKAGE=true
+                    fi
+                done
+                if [ "$IS_DIST_PACKAGE" = "false" ]; then
+                    PKGTOINSTALL="$PKGTOINSTALL ${MPIDS[$pkg]}"
+                    NAMESTOINSTALL="$NAMESTOINSTALL $pkg"
+                fi
+            done
+            if [ -n "$PKGTOINSTALL" ]; then
+                echo "Trying to reactivate: $NAMESTOINSTALL"
+                nuxeoctl mp-install --accept=true --relax=true $PKGTOINSTALL | grep -i -E "^Installing" || true
+            else
+                echo "Nothing to do."
+            fi
+        fi
+
+        # Check for upgrades
+        echo " * Checking for package upgrades"
+        nuxeoctl mp-upgrade | grep -i -E "^(Uninstalling|Installing)" || true
+
+    fi
 
 }
 
