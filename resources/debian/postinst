@@ -50,9 +50,8 @@ setup_postgresql() {
     # Check whether nuxeo cluster already exists
     nxcluster=$(pg_lsclusters -h | grep $PGCLUSTER) || true
     if [ -z "$nxcluster" ]; then
-        # get highest postgresql version
-        # no sort -V on debian yet, using -u. Will need to change for PostgreSQL 10
-        pgversion=$(pg_lsclusters -h | sort -u | tail -1 | awk '{print $1}')
+        # get postgresql version
+        pgversion=$(psql --version | awk '{print $3}' | sed -E 's/([0-9]+\.[0-9]+).*/\1/')
         if [ -z "$pgversion" ]; then
             pgversion=$PGDEFAULTVERSION
         fi
