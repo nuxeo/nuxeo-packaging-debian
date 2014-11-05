@@ -37,6 +37,9 @@
                    else="nuxeo-cap">
             <isset property="env.distribution.classifier" />
         </condition>
+        <condition property="distribution.archive" value="${env.distribution.archive}">
+            <isset property="env.distribution.archive" />
+        </condition>
         <!-- partial package settings -->
         <condition property="package.name" value="${env.package.name}"
                    else="nuxeo">
@@ -172,9 +175,17 @@
 
         <echo message="*** Download and extract distribution ***" />
         <!-- prepare distribution -->
-        <unzip dest="${out.dir}/tmpdist" overwrite="true">
-            <artifact:resolveFile key="${distribution.groupId}:${distribution.artifactId}:${distribution.version}:zip:${distribution.classifier}" />
-        </unzip>
+        <if>
+            <isset property="distribution.archive" />
+            <then>
+                <unzip src="${distribution.archive}" dest="${out.dir}/tmpdist" overwrite="true" />
+            </then>
+            <else>
+                <unzip dest="${out.dir}/tmpdist" overwrite="true">
+                    <artifact:resolveFile key="${distribution.groupId}:${distribution.artifactId}:${distribution.version}:zip:${distribution.classifier}" />
+                </unzip>
+            </else>
+        </if>
         <!-- "rename" distribution to known name -->
         <path id="unzip-dir">
             <dirset dir="${out.dir}/tmpdist">
