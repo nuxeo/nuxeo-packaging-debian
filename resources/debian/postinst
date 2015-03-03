@@ -67,22 +67,24 @@ setup_postgresql() {
         perl -p -i -e "s/^#?lc_messages\s*=.*$/lc_messages = 'en_US.UTF-8'/" $pgconf
         perl -p -i -e "s/^#?lc_time\s*=.*$/lc_time = 'en_US.UTF-8'/" $pgconf
         perl -p -i -e "s/^#?log_line_prefix\s*=.*$/log_line_prefix = '%t [%p]: [%l-1] '/" $pgconf
-        # fix shmmax for postgresql < 9.3
-        if dpkg --compare-versions "$pgversion" lt "9.3"; then
-            oldshmmod=$(grep 'After nuxeo install' /etc/sysctl.conf) || true
-            if [ -z "$oldshmmod" ]; then
-                currentmax=$(grep -E "^kernel.shmmax\s*=" /etc/sysctl.conf | tail -n 1 | cut -d= -f2 | tr -d ' ')
-                if [ -z "$currentmax" ]; then
-                    currentmax=$(sysctl kernel.shmmax | cut -d= -f2 | tr -d ' ')
-                fi
-                newmax=$(($currentmax+268435456)) # Add 256MB
-                perl -n -i -e "print unless /^kernel.shmmax\s*=/" /etc/sysctl.conf
-                echo "# Do not remove those lines (needed by Nuxeo removal scripts):" >> /etc/sysctl.conf
-                echo "# Before nuxeo install: shmmax = $currentmax" >> /etc/sysctl.conf
-                echo "# After nuxeo install: shmmax = $newmax" >> /etc/sysctl.conf
-                echo "kernel.shmmax = $newmax" >> /etc/sysctl.conf
-                sysctl -w kernel.shmmax=$newmax
-            fi
+        # fix shmmax for postgresql < 9.3 unless running in docker
+        if [ $(grep docker /proc/1/cgroup | wc -l) == "0" ]; then
+          if dpkg --compare-versions "$pgversion" lt "9.3"; then
+              oldshmmod=$(grep 'After nuxeo install' /etc/sysctl.conf) || true
+              if [ -z "$oldshmmod" ]; then
+                  currentmax=$(grep -E "^kernel.shmmax\s*=" /etc/sysctl.conf | tail -n 1 | cut -d= -f2 | tr -d ' ')
+                  if [ -z "$currentmax" ]; then
+                      currentmax=$(sysctl kernel.shmmax | cut -d= -f2 | tr -d ' ')
+                  fi
+                  newmax=$(($currentmax+268435456)) # Add 256MB
+                  perl -n -i -e "print unless /^kernel.shmmax\s*=/" /etc/sysctl.conf
+                  echo "# Do not remove those lines (needed by Nuxeo removal scripts):" >> /etc/sysctl.conf
+                  echo "# Before nuxeo install: shmmax = $currentmax" >> /etc/sysctl.conf
+                  echo "# After nuxeo install: shmmax = $newmax" >> /etc/sysctl.conf
+                  echo "kernel.shmmax = $newmax" >> /etc/sysctl.conf
+                  sysctl -w kernel.shmmax=$newmax
+              fi
+          fi
         fi
         # start cluster
         pg_ctlcluster $pgversion $PGCLUSTER start
