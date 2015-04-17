@@ -56,6 +56,7 @@ setup_postgresql() {
             pgversion=$PGDEFAULTVERSION
         fi
         # create cluster
+        export LANG="en_US.UTF-8"
         pg_createcluster --locale=en_US.UTF-8 $pgversion $PGCLUSTER
         # fix postgresql conf
         pgconf="/etc/postgresql/$pgversion/$PGCLUSTER/postgresql.conf"
