@@ -301,8 +301,8 @@
               executable="dpkg-buildpackage"
               failonerror="true">
             <arg value="-rfakeroot" />
-            <arg value="-pgpgsign" />
-            <arg value="-sgpg" />
+            <arg value="-us" />
+            <arg value="-uc" />
             <arg value="-S" />
             <env key="PATH" path="${maven.basedir}/bin:${env.PATH}" />
         </exec>
