@@ -2,3 +2,5 @@
 target*
 *.orig
 *~
+testfiles/instance.clid
+testfiles/cache

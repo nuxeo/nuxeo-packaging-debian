@@ -1,0 +1,8 @@
+Test an install/upgrade on a specific distrib (in docker).
+Add an instance.clid to this directory so marketplace packages can be installed.
+Use "latest" for the latest snapshot instead of the version.
+
+Examples:
+docker run --rm=true -t -i -v $(pwd):/testfiles -e MIRROR=netboot.in.nuxeo.com ubuntu:trusty /testfiles/test-distrib.sh install 7.2
+docker run --rm=true -t -i -v $(pwd):/testfiles -e MIRROR=netboot.in.nuxeo.com debian:jessie /testfiles/test-distrib.sh upgrade 6.0 latest
+
