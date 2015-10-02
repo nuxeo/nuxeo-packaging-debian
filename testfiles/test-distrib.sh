@@ -23,9 +23,6 @@ base() {
     echo "deb http://apt.nuxeo.org/ wheezy releases" > /etc/apt/sources.list.d/nuxeo.list
     echo "deb http://apt.nuxeo.org/ wheezy fasttracks" >> /etc/apt/sources.list.d/nuxeo.list
     echo "deb http://apt.nuxeo.org/ wheezy snapshots" >> /etc/apt/sources.list.d/nuxeo.list
-    if [ -n "$MIRROR" ]; then
-        sed -i -e "s,http://apt.nuxeo.org,http://$MIRROR/nuxeo,g" /etc/apt/sources.list.d/nuxeo.list
-    fi
     if [ ! -f /testfiles/cache/jdk-8-linux-x64.tgz ]; then
         mkdir -p /testfiles/cache
         wget -O/testfiles/cache/jdk-8-linux-x64.tgz --no-check-certificate --header 'Cookie: oraclelicense=accept-securebackup-cookie' 'http://download.oracle.com/otn-pub/java/jdk/8u40-b26/jdk-8u40-linux-x64.tar.gz'
