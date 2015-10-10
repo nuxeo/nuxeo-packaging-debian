@@ -16,3 +16,9 @@
 
 # daemon.sh is only provided as an example
 @package.name@ binary: script-not-executable
+
+# Java version
+@package.name@ binary: unknown-java-class-version
+
+# No manpage, help is included
+@package.name@ binary: binary-without-manpage
