@@ -129,7 +129,7 @@
             <then>
                 <propertyregex property="package.fasttrack.version"
                                input="${distribution.version}"
-                               regexp="([0-9]+\.[1-9]{1})"
+                               regexp="([0-9]+\.[1-9]{1})$"
                                select="\1" />
                 <if>
                     <isset property="package.fasttrack.version" />
