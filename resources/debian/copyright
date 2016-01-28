@@ -1,15 +1,14 @@
 Format: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=174
-Copyright: 2001-2011 Nuxeo and respective authors
-License: LGPL-2.1
- On Debian systems, the full text of the GNU General Public
- License version 2 can be found in the file
- '/usr/share/common-licenses/LGPL-2.1'.
+Copyright: 2001-2016 Nuxeo and respective authors
+License: Apache-2.0
+ On Debian systems, the full text of the Apache License version 2.0 can be found
+ in the file '/usr/share/common-licenses/Apache-2.0'.
 
 Files: *
-Copyright: 2001-2011 Nuxeo and respective authors
-License: LGPL-2.1
- On Debian systems, the full text of the GNU General Public License version 2
- can be found in the file '/usr/share/common-licenses/LGPL-2.1'.
+Copyright: 2001-2016 Nuxeo and respective authors
+License: Apache-2.0
+ On Debian systems, the full text of the Apache License version 2.0 can be found
+ in the file '/usr/share/common-licenses/Apache-2.0'.
 
 Files: bin/* conf/* doc-tomcat/* lib/* webapps/*
 Copyright: 1999-2009 The Apache Software Foundation
@@ -18,16 +17,16 @@ License: Apache-2.0
  in the file '/usr/share/common-licenses/Apache-2.0'.
 
 Files: bin/monitorctl.sh bin/nuxeoctl bin/openofficectl bin/pack
-Copyright: 2001-2011 Nuxeo and respective authors
-License: LGPL-2.1
- On Debian systems, the full text of the GNU General Public License version 2
- can be found in the file '/usr/share/common-licenses/LGPL-2.1'.
+Copyright: 2001-2016 Nuxeo and respective authors
+License: Apache-2.0
+ On Debian systems, the full text of the Apache License version 2.0 can be found
+ in the file '/usr/share/common-licenses/Apache-2.0'.
 
 Files: lib/nuxeo*
-Copyright: 2001-2011 Nuxeo and respective authors
-License: LGPL-2.1
- On Debian systems, the full text of the GNU General Public License version 2
- can be found in the file '/usr/share/common-licenses/LGPL-2.1'.
+Copyright: 2001-2016 Nuxeo and respective authors
+License: Apache-2.0
+ On Debian systems, the full text of the Apache License version 2.0 can be found
+ in the file '/usr/share/common-licenses/Apache-2.0'.
 
 Files: templates/postgresql/lib/postgresql-*.jar
 Copyright: 1997-2011, PostgreSQL Global Development Group
