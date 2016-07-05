@@ -34,7 +34,7 @@
             <isset property="env.distribution.version" />
         </condition>
         <condition property="distribution.classifier" value="${env.distribution.classifier}"
-                   else="nuxeo-cap">
+                   else="">
             <isset property="env.distribution.classifier" />
         </condition>
         <condition property="distribution.archive" value="${env.distribution.archive}">

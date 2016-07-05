@@ -302,6 +302,9 @@ upgrade_marketplace_packages() {
         nuxeoctl --quiet mp-init
         if [ -f "@nuxeo.etc.dir@/pkglist.cache" ]; then
             oldpkglist=$(cat @nuxeo.etc.dir@/pkglist.cache | grep -v -- '-HF' | grep -i -E "(started|starting|installing)" | awk '{print $3}' | tr '\n' ' ')
+            if dpkg --compare-versions "$OLD_NX_VERSION" le "8.2"; then
+                oldpkglist="nuxeo-jsf-ui $oldpkglist"
+            fi
             if [ -n "$oldpkglist" ]; then
                 echo " * Trying to reinstall previously installed packages"
                 nuxeoctl mp-set --relax=false --accept=true --ignore-missing $oldpkglist
