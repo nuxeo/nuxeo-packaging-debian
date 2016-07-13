@@ -178,7 +178,17 @@
         <if>
             <isset property="distribution.archive" />
             <then>
-                <unzip src="${distribution.archive}" dest="${out.dir}/tmpdist" overwrite="true" />
+                <if>
+                    <contains string="${distribution.archive}" substring="://" />
+                    <then>
+                        <mkdir dir="${out.dir}" />
+                        <get src="${distribution.archive}" dest="${out.dir}/distribution.zip" verbose="true" />
+                        <unzip src="${out.dir}/distribution.zip" dest="${out.dir}/tmpdist" overwrite="true" />
+                    </then>
+                    <else>
+                        <unzip src="${distribution.archive}" dest="${out.dir}/tmpdist" overwrite="true" />
+                    </else>
+                </if>
             </then>
             <else>
                 <unzip dest="${out.dir}/tmpdist" overwrite="true">
