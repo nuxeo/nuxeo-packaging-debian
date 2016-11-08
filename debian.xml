@@ -26,7 +26,7 @@
             <isset property="env.distribution.groupId" />
         </condition>
         <condition property="distribution.artifactId" value="${env.distribution.artifactId}"
-                   else="nuxeo-distribution-tomcat">
+                   else="nuxeo-server-tomcat">
             <isset property="env.distribution.artifactId" />
         </condition>
         <condition property="distribution.version" value="${env.distribution.version}"
