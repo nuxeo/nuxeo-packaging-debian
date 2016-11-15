@@ -10,7 +10,7 @@ Homepage: http://www.nuxeo.com/
 Package: @package.name@
 Section: web
 Architecture: all
-Depends: debconf, adduser, net-tools, libreoffice|openoffice.org, openoffice.org-headless|libreoffice, imagemagick(>=7:6.3.7), poppler-utils, ffmpeg-nuxeo|ffmpeg, ffmpeg2theora, ufraw, exiftool|libimage-exiftool-perl, libwpd-tools, postgresql (>=8.4), perl, locales, pwgen, bash (>=4), ccextractor-nuxeo, ${misc:Depends}
+Depends: debconf, adduser, net-tools, libreoffice|openoffice.org, openoffice.org-headless|libreoffice, imagemagick(>=7:6.3.7), poppler-utils, ffmpeg-nuxeo|ffmpeg, ffmpeg2theora, ufraw, exiftool|libimage-exiftool-perl, libwpd-tools, postgresql (>=8.4), perl, locales, pwgen, bash (>=4), ${misc:Depends}
 Recommends: apache2, libavcodec-extra-53
 Description: Full-featured document management server and platform
  Nuxeo is a document management server, designed to help organizations
