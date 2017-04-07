@@ -7,7 +7,7 @@ cd $BASE
 
 
 # Build indexes
-for i in releases snapshots datebased fasttracks; do
+for i in releases snapshots datebased fasttracks staging; do
   dpkg-scanpackages -m pool/$i /dev/null > /tmp/Packages
   dpkg-scansources pool/$i /dev/null > /tmp/Sources
   gzip -9c /tmp/Packages > /tmp/Packages.gz

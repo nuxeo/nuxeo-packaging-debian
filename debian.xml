@@ -150,6 +150,19 @@
                 <property name="package.type" value="releases" />
             </then>
         </if>
+        <!-- Set up staging -->
+        <if>
+            <or>
+                <equals arg1="releases" arg2="${package.type}" />
+                <equals arg1="fasttracks" arg2="${package.type}" />
+            </or>
+            <then>
+                <property name="package.pool" value="staging" />
+            </then>
+            <else>
+                <property name="package.pool" value="${package.type}" />
+            </else>
+        </if>
         <!-- Versions in debian parlance -->
         <propertyregex property="debian.version"
                        input="${package.version}"
@@ -165,6 +178,7 @@
         <echo message="Distribution version: ${distribution.version}" />
         <echo message="Package version: ${package.version}" />
         <echo message="Package type: ${package.type}" />
+        <echo message="Package pool: ${package.pool}" />
         <echo message="Debian version: ${debian.version}" />
         <echo message="Debian revision: ${debian.revision}" />
     </target>
@@ -392,7 +406,7 @@
               executable="scp"
               failonerror="true">
             <arg value="${package.name}_${debian.version}-${debian.revision}_all.deb" />
-            <arg value="${apt.user}@${apt.host}:${apt.pool}/${package.type}/" />
+            <arg value="${apt.user}@${apt.host}:${apt.pool}/${package.pool}/" />
         </exec>
 
         <echo message="*** Uploading repository update script to apt host ***" />
