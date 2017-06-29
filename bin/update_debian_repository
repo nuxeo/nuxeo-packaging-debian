@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASE="/opt/www/apt.nuxeo.org"
-DISTS="wheezy jessie precise trusty xenial yakkety zesty"
+DISTS="jessie xenial yakkety zesty"
 
 cd $BASE
 
