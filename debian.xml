@@ -30,7 +30,7 @@
             <isset property="env.distribution.artifactId" />
         </condition>
         <condition property="distribution.version" value="${env.distribution.version}"
-                   else="9.3-SNAPSHOT">
+                   else="9.10-SNAPSHOT">
             <isset property="env.distribution.version" />
         </condition>
         <condition property="distribution.classifier" value="${env.distribution.classifier}"
