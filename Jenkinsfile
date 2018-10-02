@@ -33,8 +33,9 @@ node('OLDJOYEUX') {
     timestamps {
         timeout(time: 240, unit: 'MINUTES') {
 
-           checkout poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [],
-            userRemoteConfigs: [[url: 'git@github.com:nuxeo/nuxeo-packaging-debian.git']]]
+           checkout poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']],
+           browser: [$class: 'GithubWeb', repoUrl: 'https://github.com/nuxeo/nuxeo-packaging-debian'], doGenerateSubmoduleConfigurations: false, extensions: [],
+           submoduleCfg: [], userRemoteConfigs: [[url: 'git@github.com:nuxeo/nuxeo-packaging-debian.git']]]
             sh '''
                 #!/bin/bash -ex
 
@@ -45,8 +46,6 @@ node('OLDJOYEUX') {
                 else
                 DISTRIBUTION=""
                 fi
-
-                cd nuxeo-packaging-debian
 
                 if [ "$PUBLISH_DEB" = "true" ]; then
                     echo "*** "$(date +"%H:%M:%S")" Building and publishing .deb package"
