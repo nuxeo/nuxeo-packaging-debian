@@ -55,6 +55,9 @@ setup_postgresql() {
         if [ -z "$pgversion" ]; then
             pgversion=$PGDEFAULTVERSION
         fi
+        if dpkg --compare-versions "$pgversion" ge "10"; then
+            pgversion=$(echo -n "$pgversion" | tr '.' ' ' | awk '{print $1}')
+        fi
         # create cluster
         export LANG="en_US.UTF-8"
         pg_createcluster --locale=en_US.UTF-8 $pgversion $PGCLUSTER
