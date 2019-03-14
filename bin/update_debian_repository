@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 BASE="/opt/www/apt.nuxeo.org"
 DISTS="wheezy jessie trusty xenial yakkety zesty stretch"
@@ -39,7 +39,8 @@ done
 for d in $DISTS; do
   apt-ftparchive -o"APT::FTPArchive::Release::Codename=$d" release dists/$d > /tmp/Release
   rm -f /tmp/Release.gpg
-  gpg --no-tty -abs -u 16C5B6AE --no-use-agent --passphrase-file /home/nuxeo/.gpgpass --digest-algo SHA256 -o /tmp/Release.gpg /tmp/Release || echo "Signing failed"
+  gpg --no-tty -abs -u 16C5B6AE --with-colons --batch --passphrase-file /home/nuxeo/.gpgpass --digest-algo SHA256 \
+      -o /tmp/Release.gpg /tmp/Release || echo "Signing failed"
   mv /tmp/Release dists/$d/Release
   mv /tmp/Release.gpg dists/$d/Release.gpg
 done
