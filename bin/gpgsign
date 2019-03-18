@@ -1,2 +1,2 @@
 #!/bin/bash
-gpg --no-tty --armor --clearsign -u DD1BF5E4 --with-colons --batch --passphrase-file ~/.gpgpass $1
+gpg --no-tty --armor --clearsign -u DD1BF5E4 --with-colons --batch --passphrase-file ~/.gpgpass --pinentry-mode loopback $1
