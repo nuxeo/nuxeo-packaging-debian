@@ -238,7 +238,7 @@
             </dirset>
         </chmod>
         <!-- Since preservelastmodified doesn't seem to work correctly, set all files to fixed date -->
-        <touch datetime="01/01/2000 1:00 am">
+        <touch datetime="01/01/2000, 1:00 am">
             <fileset dir="${out.dir}/${package.name}-${debian.version}">
                 <include name="**" />
             </fileset>
