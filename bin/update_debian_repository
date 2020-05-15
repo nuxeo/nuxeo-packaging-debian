@@ -3,45 +3,47 @@
 BASE="/opt/www/apt.nuxeo.org"
 DISTS="wheezy jessie trusty xenial yakkety zesty stretch bionic"
 
+mkdir -p /opt/tmp/
+
 cd $BASE
 
 
 # Build indexes
 for i in releases snapshots datebased fasttracks staging; do
-  dpkg-scanpackages -m pool/$i /dev/null > /tmp/Packages
-  dpkg-scansources pool/$i /dev/null > /tmp/Sources
-  gzip -9c /tmp/Packages > /tmp/Packages.gz
-  gzip -9c /tmp/Sources > /tmp/Sources.gz
-  bzip2 -c9 /tmp/Packages > /tmp/Packages.bz2
-  bzip2 -c9 /tmp/Sources > /tmp/Sources.bz2
+  dpkg-scanpackages -m pool/$i /dev/null > /opt/tmp/Packages
+  dpkg-scansources pool/$i /dev/null > /opt/tmp/Sources
+  gzip -9c /opt/tmp/Packages > /opt/tmp/Packages.gz
+  gzip -9c /opt/tmp/Sources > /opt/tmp/Sources.gz
+  bzip2 -c9 /opt/tmp/Packages > /opt/tmp/Packages.bz2
+  bzip2 -c9 /opt/tmp/Sources > /opt/tmp/Sources.bz2
   for j in $DISTS; do
     for k in binary-i386 binary-amd64; do
       mkdir -p dists/$j/$i/$k
-      cp /tmp/Packages dists/$j/$i/$k/Packages
-      cp /tmp/Packages.gz dists/$j/$i/$k/Packages.gz
-      cp /tmp/Packages.bz2 dists/$j/$i/$k/Packages.bz2
+      cp /opt/tmp/Packages dists/$j/$i/$k/Packages
+      cp /opt/tmp/Packages.gz dists/$j/$i/$k/Packages.gz
+      cp /opt/tmp/Packages.bz2 dists/$j/$i/$k/Packages.bz2
     done
     for k in source; do
       mkdir -p dists/$j/$i/$k
-      cp /tmp/Sources dists/$j/$i/$k/Sources
-      cp /tmp/Sources.gz dists/$j/$i/$k/Sources.gz
-      cp /tmp/Sources.bz2 dists/$j/$i/$k/Sources.bz2
+      cp /opt/tmp/Sources dists/$j/$i/$k/Sources
+      cp /opt/tmp/Sources.gz dists/$j/$i/$k/Sources.gz
+      cp /opt/tmp/Sources.bz2 dists/$j/$i/$k/Sources.bz2
     done
   done
-  rm /tmp/Packages
-  rm /tmp/Sources
-  rm /tmp/Packages.gz
-  rm /tmp/Sources.gz
-  rm /tmp/Packages.bz2
-  rm /tmp/Sources.bz2
+  rm /opt/tmp/Packages
+  rm /opt/tmp/Sources
+  rm /opt/tmp/Packages.gz
+  rm /opt/tmp/Sources.gz
+  rm /opt/tmp/Packages.bz2
+  rm /opt/tmp/Sources.bz2
 done
 
 for d in $DISTS; do
-  apt-ftparchive -o"APT::FTPArchive::Release::Codename=$d" release dists/$d > /tmp/Release
-  rm -f /tmp/Release.gpg
+  apt-ftparchive -o"APT::FTPArchive::Release::Codename=$d" release dists/$d > /opt/tmp/Release
+  rm -f /opt/tmp/Release.gpg
   gpg --no-tty -abs -u 16C5B6AE --with-colons --batch --passphrase-file /home/nuxeo/.gpgpass --pinentry-mode loopback \
-      --digest-algo SHA256 -o /tmp/Release.gpg /tmp/Release || echo "Signing failed"
-  mv /tmp/Release dists/$d/Release
-  mv /tmp/Release.gpg dists/$d/Release.gpg
+      --digest-algo SHA256 -o /opt/tmp/Release.gpg /opt/tmp/Release || echo "Signing failed"
+  mv /opt/tmp/Release dists/$d/Release
+  mv /opt/tmp/Release.gpg dists/$d/Release.gpg
 done
 
